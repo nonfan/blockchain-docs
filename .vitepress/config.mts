@@ -20,19 +20,27 @@ export default defineConfig({
       },
       {
         text: 'VeChain',
+        collapsed: false,
         items: [
           {text: '介绍', link: '/vechain/intro'},
           {text: '合约部署升级', link: '/vechain/contract-deploy'},
+          {
+            text: 'SDKs', collapsed: false, items: [
+              {text: 'Connex', link: '/vechain/sdk/connex'}
+            ]
+          },
         ]
       },
       {
         text: 'Solana',
+        collapsed: false,
         items: [
           {text: '介绍', link: '/solana/intro'},
         ]
       },
       {
         text: 'Monad',
+        collapsed: false,
         items: [
           {text: '介绍', link: '/monad/intro'},
         ]
