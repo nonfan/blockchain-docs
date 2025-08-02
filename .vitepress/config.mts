@@ -22,7 +22,7 @@ export default defineConfig({
         text: 'VeChain',
         collapsed: false,
         items: [
-          {text: '介绍', link: '/vechain/intro'},
+          {text: '公链概览', link: '/vechain/intro'},
           {text: '合约部署升级', link: '/vechain/contract-deploy'},
           {
             text: 'SDKs', collapsed: false, items: [
@@ -35,7 +35,13 @@ export default defineConfig({
         text: 'Solana',
         collapsed: false,
         items: [
-          {text: '介绍', link: '/solana/intro'},
+          {text: '公链概览', link: '/solana/intro'},
+          {
+            text: '代币', items: [
+              {text: "同质化代币", link: '/solana/token/ft'},
+              {text: "非同质化代币", link: '/solana/token/nft'},
+            ]
+          },
         ]
       },
       {
