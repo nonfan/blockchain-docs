@@ -11,7 +11,7 @@ export default defineConfig({
     logo: "/logo.svg",
     sidebar: [
       {
-        text: "概述",
+        text: "诞生",
         link: "/guide/overview"
       },
       {
@@ -48,7 +48,7 @@ export default defineConfig({
         text: 'Monad',
         collapsed: false,
         items: [
-          {text: '介绍', link: '/monad/intro'},
+          {text: '公链概览', link: '/monad/intro'},
         ]
       },
     ],

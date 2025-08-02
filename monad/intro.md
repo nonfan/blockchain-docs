@@ -94,7 +94,7 @@ Monad 提供完善的开发工具和资源，降低 DApp 开发门槛：
 Monad 通过乐观并行执行、MonadbFT 共识机制、MonadbDB 数据库和异步执行等创新技术，实现了高达 10,000 TPS 的吞吐量和亚秒级交易确认，同时保持与 EVM 的完全兼容性。其低费用和低硬件要求使其成为开发者和企业的理想选择。随着测试网的推进和主网的即将上线，Monad 有望在 DeFi、NFT 和 Web3 应用领域占据重要地位，为区块链技术的扩展性和性能树立新标杆。
 
 **参考资料**：
-- Monad 官网：www.monad.xyz[](https://www.monad.xyz/)
-- The Block：Monad 介绍[](https://www.theblock.co/learn/346005/what-is-monad)
-- Halborn：Monad 技术概述[](https://www.halborn.com/blog/post/what-is-the-monad-blockchain-the-next-step-in-l1-optimization)
-- NFT Evening：Monad 高性能区块链[](https://nftevening.com/what-is-monad-crypto/)
+- [Monad 官网](https://www.monad.xyz/)
+- [The Block：Monad 介绍](https://www.theblock.co/learn/346005/what-is-monad)
+- [Halborn：Monad 技术概述](https://www.halborn.com/blog/post/what-is-the-monad-blockchain-the-next-step-in-l1-optimization)
+- [NFT Evening：Monad 高性能区块链](https://nftevening.com/what-is-monad-crypto/)
