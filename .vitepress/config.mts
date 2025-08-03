@@ -1,4 +1,5 @@
 import {defineConfig} from 'vitepress'
+import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   lang: "zh",
@@ -12,17 +13,32 @@ export default defineConfig({
     sidebar: [
       {
         text: "诞生",
-        link: "/guide/overview"
+        link: "/guide/overview",
       },
       {
-        text: "智能合约",
-        link: "/guide/solidity"
+        text: 'Ethereum',
+        collapsed: true,
+        icon: "/ethereum.svg",
+        items: [
+          {
+            text: '公链概览',
+            link: '/ethereum/intro'
+          },
+          {
+            text: "智能合约",
+            link: "/ethereum/solidity",
+          }
+        ]
       },
       {
         text: 'VeChain',
-        collapsed: false,
+        collapsed: true,
+        icon: "/vet.svg",
         items: [
-          {text: '公链概览', link: '/vechain/intro'},
+          {
+            text: '公链概览',
+            link: '/vechain/intro'
+          },
           {text: '合约部署升级', link: '/vechain/contract-deploy'},
           {
             text: 'SDKs', collapsed: false, items: [
@@ -33,7 +49,8 @@ export default defineConfig({
       },
       {
         text: 'Solana',
-        collapsed: false,
+        collapsed: true,
+        icon: "/solana.svg",
         items: [
           {text: '公链概览', link: '/solana/intro'},
           {
@@ -46,7 +63,8 @@ export default defineConfig({
       },
       {
         text: 'Monad',
-        collapsed: false,
+        collapsed: true,
+        icon: "/monad.svg",
         items: [
           {text: '公链概览', link: '/monad/intro'},
         ]
@@ -79,4 +97,16 @@ export default defineConfig({
       copyright: 'Copyright © 2025-present <a href="https://github.com/nonfan">MOFAN</a>'
     },
   },
+  vite: {
+    resolve: {
+      alias: [
+        {
+          find: /^.*\/VPSidebarItem\.vue$/,
+          replacement: fileURLToPath(
+            new URL('./theme/components/VPSidebarItem.vue', import.meta.url)
+          )
+        }
+      ]
+    }
+  }
 })
