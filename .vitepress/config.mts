@@ -25,8 +25,50 @@ export default defineConfig({
             link: '/ethereum/intro'
           },
           {
-            text: "智能合约",
-            link: "/ethereum/solidity",
+            text: "Solidity",
+            collapsed: true,
+            items: [
+              {
+                text: "基础语法",
+                link: "/ethereum/solidity/01_basic",
+              },
+              {
+                text: "合约核心",
+                link: "/ethereum/solidity/02_structure",
+              },
+              {
+                text: "合约交互与链上调用机制",
+                link: "/ethereum/solidity/interactions",
+              },
+              {
+                text: "代币标准与常见合约",
+                link: "/ethereum/solidity/tokens",
+              },
+              {
+                text: "合约间调用与模块化设计",
+                link: "/ethereum/solidity/modules",
+              },
+              {
+                text: "安全开发与漏洞防护",
+                link: "/ethereum/solidity/security",
+              },
+              {
+                text: "测试与调试技巧",
+                link: "/ethereum/solidity/testing",
+              },
+              {
+                text: "部署、升级与验证",
+                link: "/ethereum/solidity/deployment",
+              },
+              {
+                text: "进阶特性与性能优化",
+                link: "/ethereum/solidity/advanced",
+              },
+              {
+                text: "生态标准与工具链",
+                link: "/ethereum/solidity/ecosystem",
+              },
+            ],
           }
         ]
       },
@@ -67,6 +109,14 @@ export default defineConfig({
         icon: "/monad.svg",
         items: [
           {text: '公链概览', link: '/monad/intro'},
+        ]
+      },
+      {
+        text: 'Sui',
+        collapsed: true,
+        icon: "/sui.svg",
+        items: [
+          {text: '公链概览', link: '/sui/intro'},
         ]
       },
     ],
