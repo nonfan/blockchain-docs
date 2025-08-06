@@ -37,8 +37,8 @@ export default defineConfig({
                 link: "/ethereum/solidity/02_structure",
               },
               {
-                text: "合约交互与链上调用机制",
-                link: "/ethereum/solidity/interactions",
+                text: "合约交互机制",
+                link: "/ethereum/solidity/03_interactions",
               },
               {
                 text: "代币标准与常见合约",
