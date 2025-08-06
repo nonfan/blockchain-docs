@@ -41,32 +41,32 @@ export default defineConfig({
                 link: "/ethereum/solidity/03_interactions",
               },
               {
-                text: "代币标准与常见合约",
-                link: "/ethereum/solidity/tokens",
+                text: "代币标准",
+                link: "/ethereum/solidity/04_tokens",
               },
               {
-                text: "合约间调用与模块化设计",
-                link: "/ethereum/solidity/modules",
+                text: "模块化设计",
+                link: "/ethereum/solidity/05_modules",
               },
               {
-                text: "安全开发与漏洞防护",
-                link: "/ethereum/solidity/security",
+                text: "安全防护",
+                link: "/ethereum/solidity/06_security",
               },
               {
-                text: "测试与调试技巧",
-                link: "/ethereum/solidity/testing",
+                text: "测试",
+                link: "/ethereum/solidity/07_testing",
               },
               {
-                text: "部署、升级与验证",
-                link: "/ethereum/solidity/deployment",
+                text: "部署",
+                link: "/ethereum/solidity/08_deployment",
               },
               {
-                text: "进阶特性与性能优化",
-                link: "/ethereum/solidity/advanced",
+                text: "进阶特性",
+                link: "/ethereum/solidity/09_advanced",
               },
               {
                 text: "生态标准与工具链",
-                link: "/ethereum/solidity/ecosystem",
+                link: "/ethereum/solidity/10_ecosystem",
               },
             ],
           }
