@@ -105,7 +105,9 @@ balances[msg.sender] = amount;
 
 :::
 
-## 事件声明与使用
+## 事件
+
+### 事件声明与使用
 
 事件用于记录链上日志，便于前端监听与索引。
 
@@ -118,6 +120,93 @@ event Transferred(address indexed from, address indexed to, uint256 amount);
 ```
 
 - `indexed`：允许按地址筛选事件（最多 3 个）
+- 非 `indexed` 参数：存入 data 区域
+
+### 事件日志解析与 ABI 编码
+
+Solidity 事件（`event`）是合约发出的日志，存储在以太坊交易的 `receipt.logs` 中，可用于 **前端监听、状态追踪、异步通知等场景**。
+
+#### 编码结构分析（ABI 层面）
+
+一个事件日志在链上结构大致如下：
+
+| 字段             | 说明                         |
+| -------------- | -------------------------- |
+| `address`      | 触发事件的合约地址                  |
+| `topics[0]`    | 事件签名的 keccak256 哈希值（唯一 ID） |
+| `topics[1..n]` | `indexed` 参数（按声明顺序编码）      |
+| `data`         | 其他非 indexed 参数（ABI 编码）     |
+
+
+#### 事件编码过程分析
+
+```solidity
+event LogExample(address indexed from, uint256 value);
+
+function emitLog() public {
+    emit LogExample(msg.sender, 123);
+}
+```
+
+- 事件签名哈希（`topics[0]`）：
+
+
+
+```text
+keccak256("LogExample(address,uint256)")  
+= 0xd8cdb5c66d1b4817e92d82f5ed87170df89eb0cfb703bdf6d979abf176f2e7ef
+```
+
+- `topics[1] = msg.sender` 的地址（left-padded to 32 bytes）
+
+- `data = abi.encode(123)` → 编码为 32 字节整数
+
+
+#### 解析事件日志
+
+通过 `ethers.js` 解析 Solidity 事件日志（适用于前端或脚本），从交易收据中提取事件数据。以下是详细步骤和示例：
+
+**1. 定义 ABI 与合约实例:**
+
+```ts
+const abi = [
+  "event LogExample(address indexed from, uint256 value)"
+];
+
+const iface = new ethers.utils.Interface(abi);
+```
+
+**获取交易 receipt 并解析 logs:**
+
+```ts
+const receipt = await provider.getTransactionReceipt(txHash);
+
+for (const log of receipt.logs) {
+  try {
+    const parsed = iface.parseLog(log);
+    console.log("from:", parsed.args.from);
+    console.log("value:", parsed.args.value.toString());
+  } catch (err) {
+    // 如果不是匹配的事件会报错，跳过即可
+  }
+}
+```
+
+#### 使用 abi.encode 手动构造日志筛选器 <Badge type="tip" text="ether v6"/>
+
+如果你想离线构造事件 topic 筛选器（如用 Web3 RPC 过滤器）：
+
+```ts
+import { id, hexZeroPad } from "ethers"; // v6 顶级导出
+import { JsonRpcProvider } from "ethers";
+
+const topic0 = id("LogExample(address,uint256)");
+const topic1 = hexZeroPad(someAddress, 32);
+const provider = new JsonRpcProvider(RPC_URL);
+const logs = await provider.getLogs({ address, topics });
+```
+
+
 
 ## 函数修饰符
 
