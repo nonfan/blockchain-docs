@@ -25,14 +25,14 @@ Token 2022 Program:  TokenzQd9iReCk1L66P7a6i8YQdhoU5eWj84wnm8iT
 
 ```bash
 # 准备依赖安装: solana必要库
-npm install @solana/web3.js @solana/spl-token
+npm install @solana/web3_js.md @solana/spl-token
 
 # solana钱包适配器
 npm install @solana/wallet-adapter-react @solana/wallet-adapter-wallets @solana/wallet-adapter-react-ui
 ```
 
 ```ts
-import {Connection} from '@solana/web3.js';
+import {Connection} from '@solana/web3_js.md';
 import {useWallet} from '@solana/wallet-adapter-react';
 
 // 建议：初始化连接时指定 RPC URL
@@ -49,7 +49,7 @@ const {publicKey, sendTransaction} = useWallet();
 :::code-group
 
 ```ts [DApp Kit]
-import {Connection, Keypair, SystemProgram, Transaction} from '@solana/web3.js';
+import {Connection, Keypair, SystemProgram, Transaction} from '@solana/web3_js.md';
 import {
   MINT_SIZE,
   TOKEN_2022_PROGRAM_ID,
@@ -138,7 +138,7 @@ import {
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
 } from '@solana/spl-token';
-import {PublicKey, Transaction} from '@solana/web3.js';
+import {PublicKey, Transaction} from '@solana/web3_js.md';
 
 const {publicKey, sendTransaction} = useWallet();
 const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
@@ -194,7 +194,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
-import {Connection, PublicKey, TransactionInstruction} from '@solana/web3.js';
+import {Connection, PublicKey, TransactionInstruction} from '@solana/web3_js.md';
 
 /**
  * 确保 Associated Token Account 存在（如果不存在则返回创建指令）
@@ -250,7 +250,7 @@ import {
   createMintToInstruction,
   TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
-import {Transaction, PublicKey} from '@solana/web3.js';
+import {Transaction, PublicKey} from '@solana/web3_js.md';
 import {ensureAssociatedTokenAccount} from './utils/ensureAssociatedTokenAccount';
 
 const {publicKey, sendTransaction} = useWallet();
@@ -403,7 +403,7 @@ import {
   Connection,
   PublicKey,
   Transaction,
-} from '@solana/web3.js';
+} from '@solana/web3_js.md';
 import {useWallet} from '@solana/wallet-adapter-react';
 import {ensureAssociatedTokenAccount} from './utils/ensureATA';
 
@@ -479,7 +479,7 @@ import {
   Connection,
   PublicKey,
   Transaction,
-} from '@solana/web3.js';
+} from '@solana/web3_js.md';
 import {sendTransaction, useWallet} from '@solana/wallet-adapter-react';
 import {ensureAssociatedTokenAccount} from '@/utils/token/ensureATA';
 
@@ -540,7 +540,7 @@ import {
 import {
   PublicKey,
   Transaction,
-} from '@solana/web3.js';
+} from '@solana/web3_js.md';
 
 const {publicKey, sendTransaction} = useWallet();
 const connection = new Connection('https://api.devnet.solana.com', 'confirmed');

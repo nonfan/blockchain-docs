@@ -140,3 +140,15 @@
 strong {
     color: var(--vp-code-color);
 }
+
+/*.flex {*/
+/*    display: flex;*/
+/*    justify-items: start;*/
+/*    align-items: center;*/
+/*}*/
+
+.flex {
+    display: flex;
+    align-items: center;
+    column-gap: 5px;
+}

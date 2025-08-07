@@ -69,6 +69,15 @@ export default defineConfig({
                 link: "/ethereum/solidity/10_ecosystem",
               },
             ],
+          },
+          {
+            text: 'SDKs',
+            items: [
+              {
+                text: "Ethers.js",
+                link: '/ethereum/sdks/ethers_js'
+              },
+            ]
           }
         ]
       },
@@ -84,7 +93,7 @@ export default defineConfig({
           {text: '合约部署升级', link: '/vechain/contract-deploy'},
           {
             text: 'SDKs', collapsed: false, items: [
-              {text: 'Connex', link: '/vechain/sdk/connex'}
+              {text: 'Connex', link: '/vechain/sdks/connex'}
             ]
           },
         ]

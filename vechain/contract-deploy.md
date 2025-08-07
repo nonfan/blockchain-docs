@@ -18,14 +18,14 @@ VeChain 生态系统中创建、测试、部署智能合约和与智能合约交
 npm install --save-dev hardhat
 npx hardhat
 
-npm install @vechain/sdk-hardhat-plugin
+npm install @vechain/sdks-hardhat-plugin
 ```
 
 ```bash yarn
 yarn add --dev hardhat
 npx hardhat
 
-yarn add @vechain/sdk-hardhat-plugin
+yarn add @vechain/sdks-hardhat-plugin
 ```
 
 :::
@@ -33,7 +33,7 @@ yarn add @vechain/sdk-hardhat-plugin
 **配置您的 hardhat.config.ts：**
 
 ```ts
-import '@vechain/sdk-hardhat-plugin';
+import '@vechain/sdks-hardhat-plugin';
 
 import {HttpNetworkConfig} from 'hardhat/types';
 

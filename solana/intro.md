@@ -73,7 +73,7 @@ Solana 为开发者提供了完善的工具链和文档，降低开发门槛：
 - 安装 Solana CLI：通过命令 `sh -c "$(curl -sSfL https://release.solana.com/stable/install)"` 安装。
 - 创建项目：使用 Anchor 初始化项目 `anchor init my_project`。
 - 开发与部署：编写 Rust 智能合约，在 Devnet 测试后部署至主网。
-- 前端集成：使用 `@solana/web3.js` 构建前端，连接 Solana 钱包（如 Phantom）。
+- 前端集成：使用 `@solana/web3.md` 构建前端，连接 Solana 钱包（如 Phantom）。
 
 ## 总结
 
