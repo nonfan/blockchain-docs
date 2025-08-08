@@ -221,10 +221,7 @@ export function WalletOptions() {
   ))
 }
 
-function WalletOption({
-                        connector,
-                        onClick,
-                      }: {
+function WalletOption({connector, onClick}: {
   connector: Connector
   onClick: () => void
 }) {
