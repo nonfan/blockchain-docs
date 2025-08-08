@@ -1,5 +1,6 @@
-<script setup>
-import {Hooks, Actions} from '../../.vitepress/data/wagmi'
+<script setup>import * as data from '../../.vitepress/data/wagmi';
+const Hooks = data.Hooks;
+const Actions = data.Actions;
 </script>
 
 # Wagmi
