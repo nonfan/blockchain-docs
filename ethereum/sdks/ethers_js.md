@@ -85,12 +85,38 @@ async function getBlockNumber() {
 - `getTransactionReceipt(transactionHash)`：获取交易收据。
 - `getGasPrice()`：获取当前 gas 价格。
 - `resolveName(name)`：解析 ENS 名称为地址(将人类可读的 ENS 名称（如 `vitalik.eth`）解析为实际的以太坊地址)。
+
+### 事件监听
+
+这些方法用于监听区块链事件。
+
 - `on(eventName, listener)`：监听事件（如新区块）。
 
 ```js
 const provider = new ethers.JsonRpcProvider("http://localhost:8545");
-provider.on("block", (blockNumber) => console.log("New block:", blockNumber));
+provider.on("block", (blockNumber) => {
+  console.log("New block:", blockNumber);
+});
 ```
+
+- `once(eventName, listener)`: 监听事件一次后自动移除。
+
+```js
+provider.once("block", (blockNumber) => {
+  console.log("First block received:", blockNumber);
+});
+```
+
+- `off(eventName, listener?)`: 移除事件监听器。
+```js
+const listener = (blockNumber) => console.log("Block:", blockNumber);
+provider.on("block", listener);
+provider.off("block", listener); // 移除监听
+```
+
+- `removeAllListeners(eventName?)`: 移除所有指定事件（或全部事件）的监听器。
+
+
 
 ## Signer
 
@@ -123,7 +149,75 @@ async function getSignerAddress() {
 }
 ```
 
-- `sendTransaction(transaction)`：发送交易。
+- `signMessage(message)`：签名消息。
+
+```js
+async function signMessage(signer, message) {
+  const signature = await signer.signMessage(message);
+  console.log("Signature:", signature);
+}
+```
+
+- `signTypedData(domain, types, value)`: 根据 EIP-712 签名结构化数据。
+
+```js
+async function signTypedData() {
+  const wallet = new ethers.Wallet("YOUR_PRIVATE_KEY");
+  const domain = {
+    name: "MyDApp",
+    version: "1",
+    chainId: 1,
+    verifyingContract: "0xContractAddress",
+  };
+  const types = {
+    Message: [{name: "content", type: "string"}],
+  };
+  const value = {content: "Hello, EIP-712!"};
+  const signature = await wallet.signTypedData(domain, types, value);
+  console.log("Signature:", signature);
+}
+```
+
+- `signTransaction(transaction)`: 签名交易但不发送，返回签名后的原始交易数据。用于离线签名或委托第三方广播。
+
+```js
+async function signTx() {
+  const wallet = new ethers.Wallet("YOUR_PRIVATE_KEY");
+  const tx = {
+    to: "0xRecipientAddress",
+    value: ethers.parseEther("0.1"),
+    gasLimit: 21000,
+  };
+  const signedTx = await wallet.signTransaction(tx);
+  console.log("Signed transaction:", signedTx);
+}
+```
+
+**`signTransaction` 应用场景:** *离线签名、自定义交易流程、储存交易、多人审批*。
+
+
+- `connect(provider)`：连接到新 Provider。
+
+```js
+const wallet = new ethers.Wallet("YOUR_PRIVATE_KEY");
+const provider = new ethers.JsonRpcProvider("https://mainnet.infura.io/v3/YOUR_API_KEY");
+const connectedWallet = wallet.connect(provider);
+```
+
+- `populateTransaction(transaction)`: 构造交易，但不广播到链上。适合你想做签名、自定义参数、调试等操作。
+
+```js
+async function populateTx() {
+  const wallet = new ethers.Wallet("YOUR_PRIVATE_KEY", provider);
+  const tx = await wallet.populateTransaction({
+    to: "0xRecipientAddress",
+    value: ethers.parseEther("0.1"),
+  });
+  console.log("Populated transaction:", tx);
+}
+```
+
+- `sendTransaction(transaction)`：发送交易到链上，必须是连接了 signer 的合约或钱包。
 
 ```js
 async function sendEther(signer, to, value) {
@@ -138,22 +232,30 @@ async function sendEther(signer, to, value) {
 }
 ```
 
-- `signMessage(message)`：签名消息。
-
 ```js
-async function signMessage(signer, message) {
-  const signature = await signer.signMessage(message);
-  console.log("Signature:", signature);
-}
+// 等效：隐式写法
+const txResponse = await contract.transfer(to, amount);
+await txResponse.wait(); // 等待链上确认
 ```
 
-- `connect(provider)`：连接到新 Provider。
+:::code-group
 
-```js
-const wallet = new ethers.Wallet("YOUR_PRIVATE_KEY");
-const provider = new ethers.JsonRpcProvider("https://mainnet.infura.io/v3/YOUR_API_KEY");
-const connectedWallet = wallet.connect(provider);
+```js [手动构造 + 签名 + 广播]
+const unsignedTx = await contract.populateTransaction.transfer(to, amount);
+
+// 可以修改 tx 参数（如 gasLimit、nonce 等）
+unsignedTx.gasLimit = 100_000n;
+
+// 签名（但不发送）
+const rawTx = await signer.signTransaction(unsignedTx);
+console.log("Raw signed tx:", rawTx);
+
+// 后续你可以选择发送
+const txResponse = await provider.sendTransaction(rawTx);
+await txResponse.wait();
 ```
+
+:::
 
 ## Contract
 
@@ -250,5 +352,6 @@ async function getEnsBalance(ensName) {
   const balance = await provider.getBalance(ensName);
   return ethers.formatEther(balance);
 }
+
 getEnsBalance("vitalik.eth").then(balance => console.log("Balance:", balance));
 ```

@@ -1,5 +1,5 @@
 import {defineConfig} from 'vitepress'
-import { fileURLToPath, URL } from 'node:url'
+import {fileURLToPath, URL} from 'node:url'
 
 export default defineConfig({
   lang: "zh",
@@ -77,6 +77,18 @@ export default defineConfig({
                 text: "Ethers.js",
                 link: '/ethereum/sdks/ethers_js'
               },
+              {
+                text: "JSON-RPC",
+                link: '/ethereum/sdks/json-rpc'
+              },
+              {
+                text: "Viem",
+                link: '/ethereum/sdks/viem'
+              },
+              {
+                text: "Wagmi",
+                link: '/ethereum/sdks/wagmi'
+              }
             ]
           }
         ]
