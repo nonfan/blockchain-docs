@@ -3,9 +3,10 @@ const Hooks = data.Hooks;
 const Actions = data.Actions;
 </script>
 
-# Wagmi
+# Wagmi 
+        
 
-Wagmi（We Are All Gonna Make It）是一个强大的 React 库，专为 Web3 开发设计，提供了简洁的 API
+[Wagmi（We Are All Gonna Make It）<Badge type="tip" text="2.x"/>](https://wagmi.sh/) 是一个强大的 React 库，专为 Web3 开发设计，提供了简洁的 API
 和多链支持。它可以轻松处理钱包连接、交易签名、智能合约交互等任务，并支持多种钱包（如 MetaMask、Ledger Live）以及 Sign-in with
 Ethereum 功能。Wagmi 还具有缓存、请求去重和持久化的特性，适合开发去中心化应用（DApp）、NFT 平台、DeFi 平台和 Web3 社交应用等。
 

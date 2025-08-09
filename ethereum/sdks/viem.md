@@ -1,7 +1,5 @@
 # Viem
 
-## Viem 简介与对比
-
 > Viem 是一个现代的 **TypeScript 原生库**，用于与 EVM 兼容的区块链进行交互。它是一个**模块化、轻量、强类型且无依赖的库**
 > ，常用于构建 DApp、脚本、工具等。相比传统的 ethers.js，viem 更注重类型安全、Tree-shaking 和插件扩展能力。
 
