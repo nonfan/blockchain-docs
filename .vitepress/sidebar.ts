@@ -16,6 +16,22 @@ export function getSidebar(): Record<string, SidebarItem[]> {
         link: '/guide/overview',
       },
       {
+        text: "区块链原理",
+        link: '/guide/basics/blockchain-principles',
+      },
+      {
+        text: "密码学",
+        link: '/guide/basics/cryptography',
+      },
+      {
+        text: "分布式系统",
+        link: '/guide/basics/distributed-systems',
+      },
+      {
+        text: "IPFS",
+        link: '/guide/ipfs',
+      },
+      {
         text: 'Ethereum',
         collapsed: true,
         icon: '/ethereum.svg',
@@ -31,7 +47,7 @@ export function getSidebar(): Record<string, SidebarItem[]> {
               { text: '基础语法', link: '/ethereum/solidity/01_basic' },
               { text: '合约核心', link: '/ethereum/solidity/02_structure' },
               { text: '合约交互机制', link: '/ethereum/solidity/03_interactions' },
-              { text: '代币标准', link: '/ethereum/solidity/04_tokens' },
+              { text: '代币标准与常见合约', link: '/ethereum/solidity/04_tokens' },
               { text: '模块化设计', link: '/ethereum/solidity/05_modules' },
               { text: '安全防护', link: '/ethereum/solidity/06_security' },
               { text: '测试', link: '/ethereum/solidity/07_testing' },
@@ -49,6 +65,13 @@ export function getSidebar(): Record<string, SidebarItem[]> {
               { text: 'Wagmi', link: '/ethereum/sdks/wagmi' },
             ],
           },
+          {
+            text: '工具链',
+            items: [
+              { text: 'Hardhat', link: '/ethereum/tool-chains/hardhat' },
+              { text: 'Foundry', link: '/ethereum/tool-chains/foundry' },
+            ],
+          },
         ],
       },
       {
@@ -62,7 +85,7 @@ export function getSidebar(): Record<string, SidebarItem[]> {
             text: 'SDKs',
             collapsed: false,
             items: [
-              { text: 'Connex', link: '/vechain/sdks/connex' },
+              { text: 'Connex', link: '/vechain/sdks/connex' }
             ],
           },
         ],

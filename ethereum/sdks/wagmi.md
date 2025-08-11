@@ -251,6 +251,29 @@ function WalletOption({connector, onClick}: {
 import {useAccount} from 'wagmi'
 ```
 
+wagmi 的 hooks 默认都会返回一个对象，常见的结构就是：
+
+```text
+{
+  data,        // 请求成功后的返回数据，比如交易结果、读取到的链上数据
+  isLoading,   // 请求是否正在进行中（loading 状态）
+  isError,     // 是否出错（true/false）
+  error,       // 具体的错误信息对象
+  isSuccess,   // 是否成功完成
+  ...
+}
+```
+
+```ts
+const { data, isLoading, isError, error } = useContractRead({
+  address: '0xContractAddress',
+  abi: contractAbi,
+  functionName: 'balanceOf',
+  args: [userAddress],
+})
+```
+
+
 <table>
   <thead>
     <tr>

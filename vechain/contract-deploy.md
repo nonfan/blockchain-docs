@@ -138,17 +138,15 @@ dotenv.config();
 async function main() {
   const signer = (await ethers.getSigners())[0];
 
-  const vechainHelloWorldFactory = await ethers.getContractFactory(
+  const factory = await ethers.getContractFactory(
     "MyContract",
     signer
   );
 
-  const txResponse = await vechainHelloWorldFactory.deploy;
+  const contract = await factory.deploy(/*constructor参数...args*/);
+  await contract.waitForDeployment();
 
-  console.log(
-    "合约地址:",
-    txResponse.target
-  );
+  console.log("合约地址:", await contract.getAddress());
 }
 
 main().catch((error) => {
@@ -407,8 +405,8 @@ const handleUpgrade = () => {
 ```
 
 > [!INFO] upgradeToAndCall 方法解释
-> `upgradeToAndCall` 是升级合约代理（如 UUPS Proxy 或 Transparent Proxy）时常用的一个函数。 
+> `upgradeToAndCall` 是升级合约代理（如 UUPS Proxy 或 Transparent Proxy）时常用的一个函数。
 > 它的作用是在完成合约升级的同时，立刻调用新实现合约的某个初始化函数（如升级后的初始化或数据迁移），实现“升级+初始化”一步到位。
-> - `newImplementation`：新实现合约的地址。 
-> - `data`：编码后的函数调用数据（通常为新实现的初始化或迁移函数）。 
+> - `newImplementation`：新实现合约的地址。
+> - `data`：编码后的函数调用数据（通常为新实现的初始化或迁移函数）。
 > - 可以附带 `msg.value`，以太坊/VeChain 都支持。
