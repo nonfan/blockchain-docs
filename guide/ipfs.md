@@ -41,5 +41,5 @@ IPFS 节点有“垃圾回收机制”，如果没人固定（pin）你的文件
 **公共 Pin 服务：**
 
 - `Pinata`（功能强大）
-- `Web3.Storage`（免费 1TB）
+- `Web3.Storage`（免费 5 GiB）
 
