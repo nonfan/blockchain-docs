@@ -3,10 +3,10 @@ const Hooks = data.Hooks;
 const Actions = data.Actions;
 </script>
 
-# Wagmi 
-        
+# Wagmi
 
-[Wagmi（We Are All Gonna Make It）<Badge type="tip" text="2.x"/>](https://wagmi.sh/) 是一个强大的 React 库，专为 Web3 开发设计，提供了简洁的 API
+[Wagmi（We Are All Gonna Make It）<Badge type="tip" text="2.x"/>](https://wagmi.sh/) 是一个强大的 React 库，专为 Web3
+开发设计，提供了简洁的 API
 和多链支持。它可以轻松处理钱包连接、交易签名、智能合约交互等任务，并支持多种钱包（如 MetaMask、Ledger Live）以及 Sign-in with
 Ethereum 功能。Wagmi 还具有缓存、请求去重和持久化的特性，适合开发去中心化应用（DApp）、NFT 平台、DeFi 平台和 Web3 社交应用等。
 
@@ -56,6 +56,9 @@ yarn add wagmi viem@2.x @tanstack/react-query
 
 - `wagmi`：核心库，提供与以太坊交互的 React Hooks。
 - `@tanstack/react-query`：Wagmi 依赖的库，用于处理数据查询和缓存。
+
+> [!WARNING] TypeScript
+> 类型当前需要使用 TypeScript >=5.0.4。为确保一切正常工作，请确保您的 `tsconfig.json` 将严格模式设置为 `true`。
 
 #### 创建配置
 
@@ -154,6 +157,59 @@ function App() {
 }
 ```
 
+#### 使用 Wagmi
+
+> 现在一切都已设置完毕，Wagmi 和 TanStack 查询提供程序内的每个组件都可以使用 Wagmi React Hooks。
+
+:::code-group
+
+```tsx [profile.tsx]
+import {useAccount, useEnsName} from 'wagmi'
+
+export function Profile() {
+  const {address} = useAccount()
+  const {data, error, status} = useEnsName({address})
+  if (status === 'pending') return <div>Loading ENS name</div>
+  if (status === 'error')
+    return <div>Error fetching ENS name: {error.message}</div>
+  return <div>ENS name: {data}</div>
+}
+```
+
+```tsx [app.tsx]
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query'
+import {WagmiProvider} from 'wagmi'
+import {config} from './config'
+import {Profile} from './profile'
+
+const queryClient = new QueryClient()
+
+function App() {
+  return (
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <Profile/>
+      </QueryClientProvider>
+    </WagmiProvider>
+  )
+}
+```
+
+```ts [config.ts]
+import {createConfig, http} from 'wagmi'
+import {mainnet, sepolia} from 'wagmi/chains'
+
+export const config = createConfig({
+  chains: [mainnet, sepolia],
+  transports: {
+    [mainnet.id]: http(),
+    [sepolia.id]: http(),
+  },
+})
+```
+
+:::
+
 ## 连接钱包
 
 用户连接钱包的能力是任何 Dapp 的核心功能。它允许用户执行诸如：写入合约、签署消息或发送交易等任务。
@@ -168,11 +224,81 @@ function App() {
 | **[Dynamic](https://www.dynamic.xyz/)**             | Dynamic（动态钱包 SDK）  | 允许你支持多种社交登录+钱包连接（Web2→Web3）    | 登录即钱包，适合 Web2 用户过渡  |
 | **[Privy](https://privy.io/)**                      | 枢密院（Privy）         | 支持嵌入式钱包、邮箱/Google 登录等隐私钱包      | 内嵌钱包 + 身份管理，适合非加密用户 |
 
+#### ConnectKit
+
+> Wagmi 团队维护的官方 UI 组件
+
+:::code-group
+
+```bash [安装]
+npm install connectkit
+```
+
+```ts [config.ts]
+import {WagmiProvider, createConfig, http} from "wagmi";
+import {mainnet} from "wagmi/chains";
+import {ConnectKitProvider, getDefaultConfig} from "connectkit";
+
+const config = createConfig(
+  getDefaultConfig({
+    // Your dApps chains
+    chains: [mainnet],
+    transports: {
+      // RPC URL for each chain
+      [mainnet.id]: http(
+        `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_ID}`,
+      ),
+    },
+
+    // Required API Keys
+    walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+
+    // Required App Info
+    appName: "Your App Name",
+
+    // Optional App Info
+    appDescription: "Your App Description",
+    appUrl: "https://family.co", // your app's url
+    appIcon: "https://family.co/logo.png", // your app's icon, no bigger than 1024x1024px (max. 1MB)
+  }),
+);
+
+export default config
+```
+
+```tsx [ConnectKitProvider]
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './styles/globals.css'
+import {WagmiProvider} from "wagmi";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {ConnectKitProvider, ConnectKitButton} from "connectkit";
+import config from "@/lib/config.ts";
+const queryClient = new QueryClient();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <ConnectKitProvider mode="light">  {/*钱包容器*/}
+          <ConnectKitButton/>              {/*集成式钱包组件*/}
+        </ConnectKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
+  </React.StrictMode>,
+)
+```
+
+:::
+
 ### 手动构建钱包
 
 - 配置 `Wagmi`
 
-```tsx
+:::code-group
+
+```tsx [手动配置]
 import {http, createConfig} from 'wagmi'
 import {base, mainnet, optimism} from 'wagmi/chains'
 import {injected, metaMask, safe, walletConnect} from 'wagmi/connectors'
@@ -194,7 +320,9 @@ export const config = createConfig({
 })
 ```
 
-> [!TIP] WalletConnect
+:::
+
+> [!WARNING] WalletConnect
 > 如果您想使用 WalletConnect，请务必将 `projectId` 替换为您自己的 WalletConnect 项目 ID！
 > [去获取项目 ID](https://cloud.reown.com/)
 
@@ -265,14 +393,13 @@ wagmi 的 hooks 默认都会返回一个对象，常见的结构就是：
 ```
 
 ```ts
-const { data, isLoading, isError, error } = useContractRead({
+const {data, isLoading, isError, error} = useContractRead({
   address: '0xContractAddress',
   abi: contractAbi,
   functionName: 'balanceOf',
   args: [userAddress],
 })
 ```
-
 
 <table>
   <thead>
@@ -286,7 +413,7 @@ const { data, isLoading, isError, error } = useContractRead({
     <th><a :href="'https://wagmi.sh/' + hook.link" target="_blank">{{ hook.text }}</a></th>
     <th>{{hook.description}}</th>
     </tr>
-</tbody>
+  </tbody>
 </table>
 
 ## Actions 集合

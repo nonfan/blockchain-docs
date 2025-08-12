@@ -6,6 +6,7 @@ export default defineConfig({
   lang: "zh",
   base: "/blockchain-docs",
   title: "区块链",
+  cleanUrls: true,
   description: "区块链最初因比特币而流行，目前已广泛应用于加密货币、智能合约、去中心化金融（DeFi）、NFT、供应链溯源等领域。",
   head: [['link', {rel: 'icon', href: '/blockchain-docs/logo.svg'}]],
   cleanUrls: true,
@@ -31,7 +32,7 @@ export default defineConfig({
       {icon: 'github', link: 'https://github.com/nonfan/blockchain-docs'}
     ],
     editLink: {
-      pattern: 'https://github.com/nonfan/blockchain-docs/edit/docs/docs/:path',
+      pattern: 'https://github.com/nonfan/blockchain-docs/edit/main/:path',
       text: "在 GitHub 上编辑此页面"
     },
     footer: {
