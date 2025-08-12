@@ -214,85 +214,6 @@ export const config = createConfig({
 
 用户连接钱包的能力是任何 Dapp 的核心功能。它允许用户执行诸如：写入合约、签署消息或发送交易等任务。
 
-### 第三方钱包
-
-| 库名称                                                 | 中文名                | 简介                             | 特点                  |
-|-----------------------------------------------------|--------------------|--------------------------------|---------------------|
-| **[ConnectKit](https://docs.family.co/connectkit)** | ConnectKit（连接组件工具） | Wagmi 团队维护的官方 UI 组件            | 极简、风格统一、完全兼容 wagmi  |
-| **[AppKit](https://reown.com/appkit)**              | AppKit（应用工具组件）     | 基于 ConnectKit 的进一步封装，强调全流程用户引导 | 引导 + 连接 + 状态管理一体化   |
-| **[RainbowKit](https://www.rainbowkit.com/)**       | 彩虹套件               | 由 Rainbow 团队出品的钱包连接 UI 工具      | 视觉体验最优秀之一，适合主流 DApp |
-| **[Dynamic](https://www.dynamic.xyz/)**             | Dynamic（动态钱包 SDK）  | 允许你支持多种社交登录+钱包连接（Web2→Web3）    | 登录即钱包，适合 Web2 用户过渡  |
-| **[Privy](https://privy.io/)**                      | 枢密院（Privy）         | 支持嵌入式钱包、邮箱/Google 登录等隐私钱包      | 内嵌钱包 + 身份管理，适合非加密用户 |
-
-#### ConnectKit
-
-> Wagmi 团队维护的官方 UI 组件
-
-:::code-group
-
-```bash [安装]
-npm install connectkit
-```
-
-```ts [config.ts]
-import {WagmiProvider, createConfig, http} from "wagmi";
-import {mainnet} from "wagmi/chains";
-import {ConnectKitProvider, getDefaultConfig} from "connectkit";
-
-const config = createConfig(
-  getDefaultConfig({
-    // Your dApps chains
-    chains: [mainnet],
-    transports: {
-      // RPC URL for each chain
-      [mainnet.id]: http(
-        `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_ID}`,
-      ),
-    },
-
-    // Required API Keys
-    walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
-
-    // Required App Info
-    appName: "Your App Name",
-
-    // Optional App Info
-    appDescription: "Your App Description",
-    appUrl: "https://family.co", // your app's url
-    appIcon: "https://family.co/logo.png", // your app's icon, no bigger than 1024x1024px (max. 1MB)
-  }),
-);
-
-export default config
-```
-
-```tsx [ConnectKitProvider]
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './styles/globals.css'
-import {WagmiProvider} from "wagmi";
-import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
-import {ConnectKitProvider, ConnectKitButton} from "connectkit";
-import config from "@/lib/config.ts";
-
-const queryClient = new QueryClient();
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider mode="light">  {/*钱包容器*/}
-          <ConnectKitButton/> {/*集成式钱包组件*/}
-        </ConnectKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  </React.StrictMode>,
-)
-```
-
-:::
-
 ### 手动构建钱包
 
 - 配置 `Wagmi`
@@ -371,6 +292,338 @@ function WalletOption({connector, onClick}: {
   )
 }
 ```
+
+### 第三方钱包
+
+| 库名称                                                 | 中文名                | 简介                             | 特点                  |
+|-----------------------------------------------------|--------------------|--------------------------------|---------------------|
+| **[ConnectKit](https://docs.family.co/connectkit)** | ConnectKit（连接组件工具） | Wagmi 团队维护的官方 UI 组件            | 极简、风格统一、完全兼容 wagmi  |
+| **[AppKit](https://reown.com/appkit)**              | AppKit（应用工具组件）     | 基于 ConnectKit 的进一步封装，强调全流程用户引导 | 引导 + 连接 + 状态管理一体化   |
+| **[RainbowKit](https://www.rainbowkit.com/)**       | 彩虹套件               | 由 Rainbow 团队出品的钱包连接 UI 工具      | 视觉体验最优秀之一，适合主流 DApp |
+| **[Dynamic](https://www.dynamic.xyz/)**             | Dynamic（动态钱包 SDK）  | 允许你支持多种社交登录+钱包连接（Web2→Web3）    | 登录即钱包，适合 Web2 用户过渡  |
+| **[Privy](https://privy.io/)**                      | 枢密院（Privy）         | 支持嵌入式钱包、邮箱/Google 登录等隐私钱包      | 内嵌钱包 + 身份管理，适合非加密用户 |
+
+### ConnectKit
+
+> Wagmi 团队维护的官方 UI 组件
+
+:::code-group
+
+```bash [安装]
+npm install connectkit
+```
+
+```ts [config.ts]
+import {WagmiProvider, createConfig, http} from "wagmi";
+import {mainnet} from "wagmi/chains";
+import {ConnectKitProvider, getDefaultConfig} from "connectkit";
+
+const config = createConfig(
+  getDefaultConfig({
+    // Your dApps chains
+    chains: [mainnet],
+    transports: {
+      // RPC URL for each chain
+      [mainnet.id]: http(
+        `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_ID}`,
+      ),
+    },
+
+    // Required API Keys
+    walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+
+    // Required App Info
+    appName: "Your App Name",
+
+    // Optional App Info
+    appDescription: "Your App Description",
+    appUrl: "https://family.co", // your app's url
+    appIcon: "https://family.co/logo.png", // your app's icon, no bigger than 1024x1024px (max. 1MB)
+  }),
+);
+
+export default config
+```
+
+```tsx [ConnectKitProvider]
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './styles/globals.css'
+import {WagmiProvider} from "wagmi";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {ConnectKitProvider, ConnectKitButton} from "connectkit";
+import config from "@/lib/config.ts";
+
+const queryClient = new QueryClient();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <ConnectKitProvider mode="light">  {/*钱包容器*/}
+          <ConnectKitButton/> {/*集成式钱包组件*/}
+        </ConnectKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
+  </React.StrictMode>,
+)
+```
+
+:::
+
+### AppKit
+
+> AppKit 提供与多个区块链生态系统的无缝集成。.它支持以太坊上的 Wagmi 和 Ethers v6， Solana 以及比特币和其他网络上的
+> @solana/web3.js。具有通用提供程序库的 AppKit 核心，可实现跨任何区块链协议的兼容性。
+
+#### 安装依赖
+
+```bash
+npm install @reown/appkit @reown/appkit-adapter-wagmi wagmi viem @tanstack/react-query
+```
+
+**Wagmi 配置示例：**
+
+:::code-group
+
+```ts [config.ts]
+import {createAppKit} from '@reown/appkit/react'
+import {mainnet} from '@reown/appkit/networks'
+import {WagmiAdapter} from '@reown/appkit-adapter-wagmi'
+
+// 1. 从 https://dashboard.reown.com 获取你的 projectId
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+
+// 2. 创建一个可选的 metadata 对象，用于描述你的应用
+const metadata = {
+  name: 'AppKit',                                  // 应用名称
+  description: 'AppKit Example',                   // 应用描述
+  url: 'https://example.com',                       // 应用网址，必须和你的域名和子域名匹配
+  icons: ['https://avatars.githubusercontent.com/u/179229932']  // 应用图标列表
+}
+
+// 3. 设置支持的网络，这里是 Ethereum 主网 (mainnet)
+//    使用类型断言确保 networks 是一个至少包含一个元素的元组类型
+const networks = [mainnet] as [typeof mainnet, ...typeof mainnet[]];
+
+// 4. 创建一个 Wagmi 适配器，负责连接钱包等功能
+const wagmiAdapter = new WagmiAdapter({
+  networks,       // 支持的网络列表
+  projectId,      // WalletConnect 的项目 ID
+  ssr: true,      // 是否支持服务端渲染 (Server-Side Rendering)
+})
+
+// 5. 创建 AppKit 模态框，传入适配器、网络、主题模式、项目 ID、元数据和功能配置
+createAppKit({
+  adapters: [wagmiAdapter],    // 传入适配器数组
+  networks,                   // 支持的网络列表
+  themeMode: "light",          // 主题模式，这里是浅色模式
+  projectId,                  // WalletConnect 项目 ID
+  metadata,                   // 应用元数据
+  features: {
+    analytics: true           // 是否启用分析功能，默认为你在云端的配置
+  }
+})
+
+// 导出 wagmiAdapter 的配置，用于后续在应用中使用
+export default wagmiAdapter.wagmiConfig
+```
+
+```ts [自定义网络]
+// 以Monad测试网为示例
+import {defineChain} from "viem";
+
+const customNetwork = defineChain({
+  id: 10143,
+  name: "Monad Testnet",
+  nativeCurrency: {
+    name: "Monad",
+    symbol: "MON",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://testnet-rpc.monad.xyz"],
+      webSocket: ["wss://testnet-rpc.monad.xyz"],
+    },
+    public: {
+      http: ["https://testnet-rpc.monad.xyz"],
+      webSocket: ["wss://testnet-rpc.monad.xyz"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Monad Explorer",
+      url: "https://explorer.testnet.monad.xyz",
+    },
+  },
+})
+
+const networks = [mainnet, customNetwork] as [typeof mainnet, typeof customNetwork]
+```
+
+```tsx [Main.tsx]
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './styles/globals.css'
+import {WagmiProvider} from "wagmi";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import config from "@/lib/config.ts";
+
+const queryClient = new QueryClient();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <WagmiProvider config={config}
+    >
+      <QueryClientProvider client={queryClient}>
+        <App/>
+      </QueryClientProvider>
+    </WagmiProvider>
+  </React.StrictMode>,
+)
+```
+
+```tsx [Web组件：ConnectButton.tsx]
+// Web 组件是不需要导入的全局 html 元素。
+export default function ConnectButton() {
+  return <appkit-button/>
+}
+```
+
+```tsx [Hook组件]
+import {useAppKit} from "@reown/appkit/react";
+
+export default function ConnectButton() {
+  const {open} = useAppKit();
+
+  return (
+    <>
+      <button onClick={() => open()}>Open Connect Modal</button>
+      <button onClick={() => open({view: "Networks"})}>
+        Open Network Modal
+      </button>
+    </>
+  );
+}
+```
+
+:::
+
+### RainbowKit
+
+安装RainbowKit及其对等依赖项， `wagmi`， `viem`，和 `@tanstack/react-query`。
+
+```bash
+npm install @rainbow-me/rainbowkit wagmi viem@2.x @tanstack/react-query
+```
+
+:::code-group
+
+```tsx {9,10,16-23} [Main.tsx 包装器]
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './styles/globals.css'
+import {WagmiProvider} from "wagmi";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import config from "@/lib/config.ts";
+
+import {darkTheme,RainbowKitProvider} from "@rainbow-me/rainbowkit";
+const queryClient = new QueryClient();
+
+import '@rainbow-me/rainbowkit/styles.css'; // 样式引入
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <WagmiProvider config={config}
+    >
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider theme={darkTheme()}> {/*lightTheme(默认)、darkTheme、midnightTheme*/}
+          <App/>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
+  </React.StrictMode>,
+)
+```
+
+```ts [config.ts]
+import {getDefaultConfig} from '@rainbow-me/rainbowkit';
+import {http} from 'wagmi';
+import {mainnet, sepolia} from 'wagmi/chains';
+
+const config = getDefaultConfig({
+  appName: 'My RainbowKit App',
+  projectId: 'YOUR_PROJECT_ID',
+  chains: [mainnet, sepolia],
+  transports: {
+    [mainnet.id]: http('https://eth-mainnet.g.alchemy.com/v2/...'),
+    [sepolia.id]: http('https://eth-sepolia.g.alchemy.com/v2/...'),
+  },
+});
+```
+
+```ts [自定义网络]
+import {getDefaultConfig} from '@rainbow-me/rainbowkit';
+import {http} from 'wagmi';
+import {mainnet, sepolia} from 'wagmi/chains';
+import {defineChain} from "viem";
+
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+const customNetwork = defineChain({
+  id: 10143,
+  name: "Monad Testnet",
+  nativeCurrency: {
+    name: "Monad",
+    symbol: "MON",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://testnet-rpc.monad.xyz"],
+      webSocket: ["wss://testnet-rpc.monad.xyz"],
+    },
+    public: {
+      http: ["https://testnet-rpc.monad.xyz"],
+      webSocket: ["wss://testnet-rpc.monad.xyz"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Monad Explorer",
+      url: "https://explorer.testnet.monad.xyz",
+    },
+  },
+})
+
+const config = getDefaultConfig({
+  appName: 'My RainbowKit App',
+  projectId,
+  chains: [mainnet, customNetwork],
+  transports: {
+    [mainnet.id]: http('https://eth-mainnet.g.alchemy.com/v2/...'),
+    [customNetwork.id]: http('https://testnet-rpc.monad.xyz'),
+  },
+});
+
+export default config;
+```
+
+```tsx [ConnectButton]
+import {ConnectButton} from '@rainbow-me/rainbowkit';
+
+export const App = () => {
+  return <ConnectButton/>;
+};
+```
+
+:::
+
+> [!WARNING] 注意
+> RainbowKit 是一个 React 库。
 
 ## 钱包连接器
 
@@ -606,7 +859,7 @@ function App() {
 ```
 
 ```ts
-import { type WagmiProviderProps } from 'wagmi'
+import {type WagmiProviderProps} from 'wagmi'
 ```
 
 | Props 参数           | 说明                             |
