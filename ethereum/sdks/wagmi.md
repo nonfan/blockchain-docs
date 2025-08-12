@@ -275,6 +275,7 @@ import {WagmiProvider} from "wagmi";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ConnectKitProvider, ConnectKitButton} from "connectkit";
 import config from "@/lib/config.ts";
+
 const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -282,7 +283,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <ConnectKitProvider mode="light">  {/*钱包容器*/}
-          <ConnectKitButton/>              {/*集成式钱包组件*/}
+          <ConnectKitButton/> {/*集成式钱包组件*/}
         </ConnectKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
@@ -370,6 +371,249 @@ function WalletOption({connector, onClick}: {
   )
 }
 ```
+
+## 钱包连接器
+
+> 用于连接常见钱包和区块链协议的适配器。
+
+:::code-group
+
+```ts {4,8} [BaseAccount]
+// 基本Base链 SDK 的连接器。
+import {createConfig, http} from 'wagmi'
+import {mainnet, sepolia} from 'wagmi/chains'
+import {baseAccount} from 'wagmi/connectors'
+
+export const config = createConfig({
+  chains: [mainnet, sepolia],
+  connectors: [baseAccount()],
+  transports: {
+    [mainnet.id]: http(),
+    [sepolia.id]: http(),
+  },
+})
+```
+
+```ts {4,8} [Injected]
+// 浏览器环境注入的以太坊 provider
+import {createConfig, http} from 'wagmi'
+import {mainnet, sepolia} from 'wagmi/chains'
+import {injected} from 'wagmi/connectors'
+
+export const config = createConfig({
+  chains: [mainnet, sepolia],
+  connectors: [injected()],
+  transports: {
+    [mainnet.id]: http(),
+    [sepolia.id]: http(),
+  },
+})
+```
+
+```ts {4,8} [MetaMask]
+// MetaMask SDK 的连接器。
+import {createConfig, http} from 'wagmi'
+import {mainnet, sepolia} from 'wagmi/chains'
+import {metaMask} from 'wagmi/connectors'
+
+export const config = createConfig({
+  chains: [mainnet, sepolia],
+  connectors: [metaMask()],
+  transports: {
+    [mainnet.id]: http(),
+    [sepolia.id]: http(),
+  },
+})
+```
+
+```ts {4,8} [Safe]
+// 用于连接 Safe 应用 SDK 的适配器。
+import {createConfig, http} from 'wagmi'
+import {mainnet, sepolia} from 'wagmi/chains'
+import {safe} from 'wagmi/connectors'
+
+export const config = createConfig({
+  chains: [mainnet, sepolia],
+  connectors: [safe()],
+  transports: {
+    [mainnet.id]: http(),
+    [sepolia.id]: http(),
+  },
+})
+```
+
+```ts {4,9-11} [WalletConnect]
+// WalletConnect 的连接器。https://reown.com/
+import {createConfig, http} from 'wagmi'
+import {mainnet, sepolia} from 'wagmi/chains'
+import {walletConnect} from 'wagmi/connectors'
+
+export const config = createConfig({
+  chains: [mainnet, sepolia],
+  connectors: [
+    walletConnect({
+      projectId: '3fcc6bba6f1de962d911bb5b5c3dba68',
+    }),
+  ],
+  transports: {
+    [mainnet.id]: http(),
+    [sepolia.id]: http(),
+  },
+})
+```
+
+```ts {4,9-15} [Mock]
+// 用于模拟 Wagmi 功能的连接器。
+import {createConfig, http} from 'wagmi'
+import {mainnet, sepolia} from 'wagmi/chains'
+import {mock} from 'wagmi/connectors'
+
+export const config = createConfig({
+  chains: [mainnet, sepolia],
+  connectors: [
+    mock({
+      accounts: [
+        '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+        '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
+        '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+      ],
+    }),
+  ],
+  transports: {
+    [mainnet.id]: http(),
+    [sepolia.id]: http(),
+  },
+})
+```
+
+:::
+
+## Transports
+
+`createConfig` 可以为每条链配置一组 传输层（Transports）。传输层是负责将发出的 JSON-RPC 请求发送到 RPC 提供者（比如
+Alchemy、Infura 等）的中间层。
+
+换句话说，传输层充当客户端和区块链节点之间的桥梁，确保请求正确发送并获得响应。
+
+### custom
+
+自定义传输（Custom Transport）通过自定义方式连接到 JSON-RPC API，封装了 Viem 库中的自定义传输功能。
+
+```ts
+import {
+  createConfig,
+  custom
+} from 'wagmi'
+import {mainnet} from 'wagmi/chains'
+import {customRpc} from './rpc'
+
+export const config = createConfig({
+  chains: [mainnet],
+  connectors: [injected()],
+  transports: {
+    [mainnet.id]: custom({
+      async request({method, params}) {
+        const response = await customRpc.request(method, params)
+        return response
+      }
+    })
+  },
+})
+```
+
+### fallback
+
+后备传输（fallback Transport） 会依次使用多个传输（Transports）。当某个传输请求失败时，它会自动切换到列表中的下一个传输继续请求。该功能封装了
+Viem 库中的后备传输机制。
+
+```ts
+import {
+  createConfig,
+  fallback,
+  http,
+} from 'wagmi'
+import {mainnet} from 'wagmi/chains'
+
+export const config = createConfig({
+  chains: [mainnet],
+  connectors: [injected()],
+  transports: {
+    [mainnet.id]: fallback([
+      http('https://foo-bar-baz.quiknode.pro/...'),
+      http('https://mainnet.infura.io/v3/...'),
+    ])
+  },
+})
+```
+
+### http
+
+http 传输（http Transport） 通过 HTTP 连接到 JSON-RPC API，封装了 Viem 库中的 http 传输功能。
+
+```ts
+import {
+  createConfig,
+  http
+} from 'wagmi'
+import {mainnet, sepolia} from 'wagmi/chains'
+
+export const config = createConfig({
+  chains: [mainnet, sepolia],
+  connectors: [injected()],
+  transports: {
+    [mainnet.id]: http('https://foo-bar-baz.quiknode.pro/...'),
+    [sepolia.id]: http('https://foo-bar-sep.quiknode.pro/...'),
+  },
+})
+```
+
+### webSocket
+
+WebSocket 传输（webSocket Transport） 通过 WebSocket 连接到 JSON-RPC API，封装了 Viem 库中的 webSocket 传输功能。
+
+```ts
+import {
+  createConfig,
+  webSocket
+} from 'wagmi'
+import {mainnet, sepolia} from 'wagmi/chains'
+
+export const config = createConfig({
+  chains: [mainnet, sepolia],
+  connectors: [injected()],
+  transports: {
+    [mainnet.id]: webSocket('wss://foo-bar-baz.quiknode.pro/...'),
+    [sepolia.id]: webSocket('wss://foo-bar-sep.quicknode.pro/...'),
+  },
+})
+```
+
+## WagmiProvider
+
+Wagmi 的 React Context Provider 是一个 React 组件，用来在应用中全局提供 Wagmi 的配置和状态。
+
+```tsx
+import {WagmiProvider} from 'wagmi'
+import {config} from './config'
+
+function App() {
+  return (
+    <WagmiProvider config={config}>
+      {/** ... */}
+    </WagmiProvider>
+  )
+}
+```
+
+```ts
+import { type WagmiProviderProps } from 'wagmi'
+```
+
+| Props 参数           | 说明                             |
+|--------------------|--------------------------------|
+| `config`           | Config 对象以注入上下文。               |
+| `initialState`     | 初始状态，以水合到 Wagmi 配置中。对 SSR 很有用。 |
+| `reconnectOnMount` | 控制组件挂载时是否自动尝试重新连接之前已连接的钱包。     |
 
 ## Hooks 集合
 
