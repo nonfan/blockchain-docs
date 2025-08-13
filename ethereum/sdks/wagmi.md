@@ -377,6 +377,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 > AppKit 提供与多个区块链生态系统的无缝集成。.它支持以太坊上的 Wagmi 和 Ethers v6， Solana 以及比特币和其他网络上的
 > @solana/web3.js。具有通用提供程序库的 AppKit 核心，可实现跨任何区块链协议的兼容性。
 
+![App Kit](/examples/appkit.png)
+
 #### 安装依赖
 
 ```bash
@@ -514,6 +516,10 @@ export default function ConnectButton() {
 
 ### RainbowKit
 
+> RainbowKit 是一个 React 库，可以轻松地将钱包连接添加到您的 dapp。它直观、响应迅速且可自定义。它直观、响应迅速且可自定义。
+
+![RainbowKit](/examples/rainbowkit.png)
+
 安装RainbowKit及其对等依赖项， `wagmi`， `viem`，和 `@tanstack/react-query`。
 
 ```bash
@@ -531,7 +537,8 @@ import {WagmiProvider} from "wagmi";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import config from "@/lib/config.ts";
 
-import {darkTheme,RainbowKitProvider} from "@rainbow-me/rainbowkit";
+import {darkTheme, RainbowKitProvider} from "@rainbow-me/rainbowkit";
+
 const queryClient = new QueryClient();
 
 import '@rainbow-me/rainbowkit/styles.css'; // 样式引入
@@ -621,9 +628,6 @@ export const App = () => {
 ```
 
 :::
-
-> [!WARNING] 注意
-> RainbowKit 是一个 React 库。
 
 ## 钱包连接器
 

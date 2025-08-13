@@ -131,3 +131,7 @@ strong {
     align-items: center;
     column-gap: 5px;
 }
+
+img {
+    border-radius: 10px;
+}
