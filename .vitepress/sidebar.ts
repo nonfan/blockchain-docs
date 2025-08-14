@@ -1,5 +1,3 @@
-import type { DefaultTheme } from 'vitepress'
-
 interface SidebarItem {
   text: string
   collapsed?: boolean
