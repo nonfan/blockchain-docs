@@ -9,7 +9,6 @@ export default defineConfig({
   cleanUrls: true,
   description: "区块链最初因比特币而流行，目前已广泛应用于加密货币、智能合约、去中心化金融（DeFi）、NFT、供应链溯源等领域。",
   head: [['link', {rel: 'icon', href: '/blockchain-docs/logo.svg'}]],
-  cleanUrls: true,
   themeConfig: {
     logo: "/logo.svg",
     sidebar: getSidebar(),
