@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "esnext",        // 或 "es2020" / "es2022"
+    "target": "esnext",        // 建议也用 esnext
+    "moduleResolution": "node",
+    "strict": true,
+    "jsx": "preserve",
+    "esModuleInterop": true,
+    "allowJs": true,
+    "types": ["vite/client"]
+  },
+  "exclude": [
+    "./src/snippets/**"
+  ]
+}

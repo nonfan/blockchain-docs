@@ -921,7 +921,7 @@ const {data, isLoading, isError, error} = useContractRead({
 
 > 账户、钱包、合约、交易、签名、ENS 等的函数。
 
-```tsx
+```tsx 
 import {getAccount} from '@wagmi/core'
 ```
 
@@ -933,10 +933,411 @@ import {getAccount} from '@wagmi/core'
     </tr>
   </thead>
   <tbody>
-    <tr v-for="actions of Actions">
-    <th><a :href="'https://wagmi.sh/' + actions.link" target="_blank">{{ actions.text }}</a></th>
-    <th>{{actions.description}}</th>
+    <tr v-for="action of Actions">
+    <th>
+      <KeywordTip :href="'https://wagmi.sh/' + action.link" :keyword="action.text" :file="action.text + '.txt'" lang="tsx"></KeywordTip>
+    </th>
+    <th>{{action.description}}</th>
     </tr>
 </tbody>
 </table>
 
+## 进阶
+
+### multicall
+
+> Multicall 就是为了解决这个问题：把多个 eth_call 打包成一个合约调用，链上 Multicall 合约帮你执行，最后一次性返回结果。
+
+:::code-group
+
+```ts [示例]
+import {multicall} from '@wagmi/core'
+import {config} from './config'
+
+const wagmigotchiContract = {
+  address: '0xecb504d39723b0be0e3a9aa33d646642d1051ee1',
+  abi: wagmigotchiABI,
+} as const
+const mlootContract = {
+  address: '0x1dfe7ca09e99d10835bf73044a23b73fc20623df',
+  abi: mlootABI,
+} as const
+
+const result = await multicall(config, {
+  contracts: [
+    {
+      ...wagmigotchiContract,
+      functionName: 'getAlive',
+    },
+    {
+      ...wagmigotchiContract,
+      functionName: 'getBoredom',
+    },
+    {
+      ...mlootContract,
+      functionName: 'getChest',
+      args: [69],
+    },
+    {
+      ...mlootContract,
+      functionName: 'getWaist',
+      args: [69],
+    },
+  ],
+})
+```
+
+```solidity [部署multicall合约]
+// 例如Monad Test目前没有部署multicall合约，就需要自己亲自部署，在Etherscan有源码
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.20;
+
+/// @title Multicall3
+/// @notice Aggregate results from multiple function calls
+/// @dev Multicall & Multicall2 backwards-compatible
+/// @dev Aggregate methods are marked `payable` to save 24 gas per call
+/// @author Michael Elliot <mike@makerdao.com>
+/// @author Joshua Levine <joshua@makerdao.com>
+/// @author Nick Johnson <arachnid@notdot.net>
+/// @author Andreas Bigger <andreas@nascent.xyz>
+/// @author Matt Solomon <matt@mattsolomon.dev>
+contract Multicall3 {
+    struct Call {
+        address target;
+        bytes callData;
+    }
+
+    struct Call3 {
+        address target;
+        bool allowFailure;
+        bytes callData;
+    }
+
+    struct Call3Value {
+        address target;
+        bool allowFailure;
+        uint256 value;
+        bytes callData;
+    }
+
+    struct Result {
+        bool success;
+        bytes returnData;
+    }
+
+    /// @notice Backwards-compatible call aggregation with Multicall
+    /// @param calls An array of Call structs
+    /// @return blockNumber The block number where the calls were executed
+    /// @return returnData An array of bytes containing the responses
+    function aggregate(Call[] calldata calls) public payable returns (uint256 blockNumber, bytes[] memory returnData) {
+        blockNumber = block.number;
+        uint256 length = calls.length;
+        returnData = new bytes[](length);
+        Call calldata call;
+        for (uint256 i = 0; i < length;) {
+            bool success;
+            call = calls[i];
+            (success, returnData[i]) = call.target.call(call.callData);
+            require(success, "Multicall3: call failed");
+            unchecked {++i;}
+        }
+    }
+
+    /// @notice Backwards-compatible with Multicall2
+    /// @notice Aggregate calls without requiring success
+    /// @param requireSuccess If true, require all calls to succeed
+    /// @param calls An array of Call structs
+    /// @return returnData An array of Result structs
+    function tryAggregate(bool requireSuccess, Call[] calldata calls) public payable returns (Result[] memory returnData) {
+        uint256 length = calls.length;
+        returnData = new Result[](length);
+        Call calldata call;
+        for (uint256 i = 0; i < length;) {
+            Result memory result = returnData[i];
+            call = calls[i];
+            (result.success, result.returnData) = call.target.call(call.callData);
+            if (requireSuccess) require(result.success, "Multicall3: call failed");
+            unchecked {++i;}
+        }
+    }
+
+    /// @notice Backwards-compatible with Multicall2
+    /// @notice Aggregate calls and allow failures using tryAggregate
+    /// @param calls An array of Call structs
+    /// @return blockNumber The block number where the calls were executed
+    /// @return blockHash The hash of the block where the calls were executed
+    /// @return returnData An array of Result structs
+    function tryBlockAndAggregate(bool requireSuccess, Call[] calldata calls) public payable returns (uint256 blockNumber, bytes32 blockHash, Result[] memory returnData) {
+        blockNumber = block.number;
+        blockHash = blockhash(block.number);
+        returnData = tryAggregate(requireSuccess, calls);
+    }
+
+    /// @notice Backwards-compatible with Multicall2
+    /// @notice Aggregate calls and allow failures using tryAggregate
+    /// @param calls An array of Call structs
+    /// @return blockNumber The block number where the calls were executed
+    /// @return blockHash The hash of the block where the calls were executed
+    /// @return returnData An array of Result structs
+    function blockAndAggregate(Call[] calldata calls) public payable returns (uint256 blockNumber, bytes32 blockHash, Result[] memory returnData) {
+        (blockNumber, blockHash, returnData) = tryBlockAndAggregate(true, calls);
+    }
+
+    /// @notice Aggregate calls, ensuring each returns success if required
+    /// @param calls An array of Call3 structs
+    /// @return returnData An array of Result structs
+    function aggregate3(Call3[] calldata calls) public payable returns (Result[] memory returnData) {
+        uint256 length = calls.length;
+        returnData = new Result[](length);
+        Call3 calldata calli;
+        for (uint256 i = 0; i < length;) {
+            Result memory result = returnData[i];
+            calli = calls[i];
+            (result.success, result.returnData) = calli.target.call(calli.callData);
+            assembly {
+            // Revert if the call fails and failure is not allowed
+            // `allowFailure := calldataload(add(calli, 0x20))` and `success := mload(result)`
+                if iszero(or(calldataload(add(calli, 0x20)), mload(result))) {
+                // set "Error(string)" signature: bytes32(bytes4(keccak256("Error(string)")))
+                    mstore(0x00, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+                // set data offset
+                    mstore(0x04, 0x0000000000000000000000000000000000000000000000000000000000000020)
+                // set length of revert string
+                    mstore(0x24, 0x0000000000000000000000000000000000000000000000000000000000000017)
+                // set revert string: bytes32(abi.encodePacked("Multicall3: call failed"))
+                    mstore(0x44, 0x4d756c746963616c6c333a2063616c6c206661696c6564000000000000000000)
+                    revert(0x00, 0x64)
+                }
+            }
+            unchecked {++i;}
+        }
+    }
+
+    /// @notice Aggregate calls with a msg value
+    /// @notice Reverts if msg.value is less than the sum of the call values
+    /// @param calls An array of Call3Value structs
+    /// @return returnData An array of Result structs
+    function aggregate3Value(Call3Value[] calldata calls) public payable returns (Result[] memory returnData) {
+        uint256 valAccumulator;
+        uint256 length = calls.length;
+        returnData = new Result[](length);
+        Call3Value calldata calli;
+        for (uint256 i = 0; i < length;) {
+            Result memory result = returnData[i];
+            calli = calls[i];
+            uint256 val = calli.value;
+            // Humanity will be a Type V Kardashev Civilization before this overflows - andreas
+            // ~ 10^25 Wei in existence << ~ 10^76 size uint fits in a uint256
+            unchecked {valAccumulator += val;}
+            (result.success, result.returnData) = calli.target.call{value: val}(calli.callData);
+            assembly {
+            // Revert if the call fails and failure is not allowed
+            // `allowFailure := calldataload(add(calli, 0x20))` and `success := mload(result)`
+                if iszero(or(calldataload(add(calli, 0x20)), mload(result))) {
+                // set "Error(string)" signature: bytes32(bytes4(keccak256("Error(string)")))
+                    mstore(0x00, 0x08c379a000000000000000000000000000000000000000000000000000000000)
+                // set data offset
+                    mstore(0x04, 0x0000000000000000000000000000000000000000000000000000000000000020)
+                // set length of revert string
+                    mstore(0x24, 0x0000000000000000000000000000000000000000000000000000000000000017)
+                // set revert string: bytes32(abi.encodePacked("Multicall3: call failed"))
+                    mstore(0x44, 0x4d756c746963616c6c333a2063616c6c206661696c6564000000000000000000)
+                    revert(0x00, 0x84)
+                }
+            }
+            unchecked {++i;}
+        }
+        // Finally, make sure the msg.value = SUM(call[0...i].value)
+        require(msg.value == valAccumulator, "Multicall3: value mismatch");
+    }
+
+    /// @notice Returns the block hash for the given block number
+    /// @param blockNumber The block number
+    function getBlockHash(uint256 blockNumber) public view returns (bytes32 blockHash) {
+        blockHash = blockhash(blockNumber);
+    }
+
+    /// @notice Returns the block number
+    function getBlockNumber() public view returns (uint256 blockNumber) {
+        blockNumber = block.number;
+    }
+
+    /// @notice Returns the block coinbase
+    function getCurrentBlockCoinbase() public view returns (address coinbase) {
+        coinbase = block.coinbase;
+    }
+
+    /// @notice Returns the block difficulty
+    function getCurrentBlockDifficulty() public view returns (uint256 difficulty) {
+        difficulty = block.difficulty;
+    }
+
+    /// @notice Returns the block gas limit
+    function getCurrentBlockGasLimit() public view returns (uint256 gaslimit) {
+        gaslimit = block.gaslimit;
+    }
+
+    /// @notice Returns the block timestamp
+    function getCurrentBlockTimestamp() public view returns (uint256 timestamp) {
+        timestamp = block.timestamp;
+    }
+
+    /// @notice Returns the (ETH) balance of a given address
+    function getEthBalance(address addr) public view returns (uint256 balance) {
+        balance = addr.balance;
+    }
+
+    /// @notice Returns the block hash of the last block
+    function getLastBlockHash() public view returns (bytes32 blockHash) {
+        unchecked {
+            blockHash = blockhash(block.number - 1);
+        }
+    }
+
+    /// @notice Gets the base fee of the given block
+    /// @notice Can revert if the BASEFEE opcode is not implemented by the given chain
+    function getBasefee() public view returns (uint256 basefee) {
+        basefee = block.basefee;
+    }
+
+    /// @notice Returns the chain id
+    function getChainId() public view returns (uint256 chainid) {
+        chainid = block.chainid;
+    }
+}
+```
+
+```ts [配置Config使用Multicall3]
+import {getDefaultConfig} from "@rainbow-me/rainbowkit";
+import {http} from "wagmi";
+import {defineChain} from "viem";
+
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+const customNetwork = defineChain({
+  id: 10143,
+  name: "Monad Testnet",
+  nativeCurrency: {
+    name: "Monad",
+    symbol: "MON",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://testnet-rpc.monad.xyz"],
+      webSocket: ["wss://testnet-rpc.monad.xyz"],
+    },
+    public: {
+      http: ["https://testnet-rpc.monad.xyz"],
+      webSocket: ["wss://testnet-rpc.monad.xyz"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Monad Explorer",
+      url: "https://explorer.testnet.monad.xyz",
+    },
+  },
+  contracts: { // [!code focus:6]
+    multicall3: {
+      address: "0xeCf6cd06B29f902543C0A79c6a7D0b2090CB3356", // 你部署的地址
+      blockCreated: 32354777, // 部署的区块高度
+    },
+  },
+});
+
+const config = getDefaultConfig({
+  appName: "My RainbowKit App",
+  projectId,
+  chains: [customNetwork],
+  transports: {
+    [customNetwork.id]: http("https://testnet-rpc.monad.xyz"),
+  },
+});
+
+export default config;
+
+```
+
+:::
+
+### 搞懂wagmi各种库
+
+> 搞懂 wagmi、@wagmi/core 和 wagmi/actions 的区别与关系
+
+在使用 wagmi 开发 Web3 应用时，经常会遇到三个名字相似的包：
+
+- `wagmi`
+- `@wagmi/core`
+- `wagmi/actions`
+
+很多同学在写 React dApp 的时候可能会疑惑：
+
+- 为什么有时候官方示例直接 `import { useAccount } from "wagmi"`。
+- 而有些场景下却需要 `@wagmi/core` 或者 `wagmi/actions`?
+
+本文就来彻底梳理它们的定位和关系。
+
+#### wagmi
+
+> wagmi 是 React 项目专用的包，内部基于 `@wagmi/core` 实现，并封装成了 React Hooks。
+
+常见的 hook 如： [hooks-集合](#hooks-集合)
+
+导入规则：`import { useAccount, useBalance } from 'wagmi'`
+
+#### @wagmi/core
+
+> `@wagmi/core` 是 wagmi 的 核心底层，它不依赖 React，可以单独在 Node.js、Vue、Svelte、Next.js server actions 等环境中使用。
+
+它提供的能力主要是：
+
+- 管理链配置（createConfig）
+- 钱包连接器（injected, metaMask, walletConnect 等）
+- 账户与链的全局状态管理
+
+:::code-group
+
+```ts [使用示例（非 React 环境）]
+import {createConfig, getAccount} from '@wagmi/core'
+import {http} from 'viem'
+import {mainnet} from 'viem/chains'
+
+const config = createConfig({
+  chains: [mainnet],
+  transports: {[mainnet.id]: http()}
+})
+
+console.log(getAccount(config))  // 获取当前账户信息
+```
+
+:::
+
+> [!TIP] 适用场景
+> - 不依赖 React 的项目
+> - SSR / 后端脚本
+> - 自定义框架
+
+#### wagmi/actions
+
+> `wagmi/actions` 是一组独立的**工具函数**，提供了对链的命令式调用（imperative API），不需要 React Hook。
+
+它依赖 `@wagmi/core` 的 config，常见的 API 有：[actions-集合](#actions-集合)
+
+```ts
+import {getBalance, writeContract} from 'wagmi/actions'
+import {config} from './config'
+
+const balance = await getBalance(config, {address: '0x123...'})
+console.log(balance.formatted)
+
+await writeContract(config, {
+  address: '0xTokenAddress',
+  abi: erc20Abi,
+  functionName: 'transfer',
+  args: ['0xabc...', 1000n],
+})
+```
+
+> [!TIP] 适用场景
+> - 不想用 Hook，只需要直接发起一次请求
+> - 在脚本、服务端或工具函数中调用区块链操作

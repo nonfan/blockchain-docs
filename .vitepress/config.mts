@@ -1,6 +1,8 @@
 import {defineConfig} from 'vitepress'
 import {fileURLToPath, URL} from 'node:url'
 import {getSidebar} from "./sidebar";
+import { transformerTwoslash, defaultHoverInfoProcessor } from '@shikijs/vitepress-twoslash'
+import KeywordTipPlugin from './plugins/keywordTipPlugin'
 
 export default defineConfig({
   lang: "zh",
@@ -47,8 +49,33 @@ export default defineConfig({
           replacement: fileURLToPath(
             new URL('./theme/components/VPSidebarItem.vue', import.meta.url)
           )
-        }
+        },
       ]
+    }
+  },
+  markdown: {
+    config: (md) => {
+      // 注册关键字替换插件
+      md.use(KeywordTipPlugin, {
+        keywords: {
+          useAccount: { file: 'useAccount.txt', lang: 'tsx' },
+        }
+      })
+    },
+    code: {
+      highlight: 'shiki',
+      shikiConfig: {
+        themes: {
+          light: 'vitesse-light',
+          dark: 'vitesse-dark',
+        },
+        transformers: [
+          transformerTwoslash({
+            // 控制 Hover 的 tooltip 怎么显示
+            processHoverInfo: defaultHoverInfoProcessor
+          })
+        ]
+      }
     }
   }
 })

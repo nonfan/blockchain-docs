@@ -3,6 +3,7 @@ import { h } from 'vue'
 import type { Theme } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import './style.css'
+import KeywordTip from "./components/KeywordTip.vue";
 
 export default {
   extends: DefaultTheme,
@@ -11,6 +12,7 @@ export default {
 
     })
   },
-  // enhanceApp({ app, router, siteData }) {
-  // }
+  enhanceApp({ app, router, siteData }) {
+    app.component('KeywordTip', KeywordTip);
+  }
 } satisfies Theme
