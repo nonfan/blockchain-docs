@@ -1,0 +1,13 @@
+import { call } from '@wagmi/core'
+import { config } from './config'
+
+await call(config, {
+  // 作为调用时的 msg.sender（只有合约里用到 msg.sender 时才会影响结果）
+  account: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
+
+  // ABI 编码后的函数调用数据（calldata）
+  data: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+
+  // 目标合约地址（即调用的智能合约）
+  to: '0x70997970c51812dc3a010c7d01b50e0d17dc79c8',
+})

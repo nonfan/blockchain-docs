@@ -1,0 +1,8 @@
+import { useAccount } from 'wagmi'
+import { config } from './config'
+
+function App() {
+  const account = useAccount({
+    config,
+  })
+}

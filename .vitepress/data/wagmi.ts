@@ -1,5 +1,5 @@
 export const Hooks = [
-  { text: 'useAccount', link: '/react/api/hooks/useAccount', description: '获取当前钱包账户信息（地址、连接器、状态等）' },
+  { text: 'useAccount', link: '/react/api/hooks/useAccount.txt', description: '获取当前钱包账户信息（地址、连接器、状态等）' },
   { text: 'useAccountEffect', link: '/react/api/hooks/useAccountEffect', description: '在账户连接或断开时触发副作用函数' },
   { text: 'useBalance', link: '/react/api/hooks/useBalance', description: '获取某个地址的原生代币余额' },
   { text: 'useBlockNumber', link: '/react/api/hooks/useBlockNumber', description: '订阅当前区块号' },

@@ -1,6 +1,8 @@
 {
   "devDependencies": {
+    "@shikijs/vitepress-twoslash": "^3.11.0",
     "mermaid": "^11.9.0",
+    "shiki": "^3.11.0",
     "vitepress": "^1.6.3",
     "vitepress-mermaid-renderer": "^1.0.14",
     "vitepress-plugin-legend": "^1.0.6",
@@ -10,5 +12,9 @@
     "start": "vitepress dev",
     "docs:build": "vitepress build",
     "docs:preview": "vitepress preview"
+  },
+  "dependencies": {
+    "node": "^24.6.0",
+    "prismjs": "^1.30.0"
   }
 }
