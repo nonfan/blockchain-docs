@@ -935,7 +935,7 @@ import {getAccount} from '@wagmi/core'
   <tbody>
     <tr v-for="action of Actions">
     <th>
-      <KeywordTip :href="'https://wagmi.sh/' + action.link" :keyword="action.text" :file="action.text + '.txt'" lang="tsx"></KeywordTip>
+      <KeywordTip :href="'https://wagmi.sh/' + action.link" :keyword="action.text" :file="action.file" lang="tsx"></KeywordTip>
     </th>
     <th>{{action.description}}</th>
     </tr>

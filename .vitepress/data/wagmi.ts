@@ -64,7 +64,7 @@ export const Hooks = [
 ];
 
 export const Actions = [
-  { text: 'call', link: '/core/api/actions/call', description: '执行一次智能合约调用（只读）' },
+  { text: 'call',  file: 'call.txt', link: '/core/api/actions/call', description: '执行一次智能合约调用（只读）' },
   { text: 'connect', link: '/core/api/actions/connect', description: '连接指定的钱包连接器' },
   { text: 'deployContract', link: '/core/api/actions/deployContract', description: '部署合约到链上' },
   { text: 'disconnect', link: '/core/api/actions/disconnect', description: '断开当前连接的钱包' },

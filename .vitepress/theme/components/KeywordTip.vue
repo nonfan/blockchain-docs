@@ -1,7 +1,6 @@
-```vue
 <template>
   <span
-    class="keyword-tip"
+    :class="['keyword-tip', !!file ? 'active' : '']"
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
   >
@@ -229,7 +228,7 @@ onMounted(() => {
   transform: scale(1.1); /* 轻微放大效果 */
 }
 
-.keyword-tip {
+.keyword-tip.active  {
   position: relative;
   cursor: pointer;
   font-weight: 500;
@@ -237,12 +236,12 @@ onMounted(() => {
   border-bottom: 1px dashed #B07D48;
 }
 
-.dark .keyword-tip {
+.dark .keyword-tip.active {
   color: #BD976A;
   border-bottom: 1px dashed #BD976A;
 }
 
-.keyword-tip a {
+.active a {
   text-decoration: none;
   color: inherit;
 }
@@ -280,4 +279,3 @@ onMounted(() => {
   opacity: 0;
 }
 </style>
-```
