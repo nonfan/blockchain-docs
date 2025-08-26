@@ -1,0 +1,9 @@
+/**
+如果你想优化打包体积，应该使用 getClient
+并结合 Viem 的可 tree-shake 操作（tree-shakable actions）。
+因为 Public Client 会将所有公共操作直接挂载在它上面。
+*/
+import { getPublicClient } from '@wagmi/core'
+import { config } from './config'
+
+const client = getPublicClient(config)

@@ -1,0 +1,8 @@
+import { metamask } from 'wagmi/connectors'
+import { connect } from '@wagmi/core'
+import { config } from './config'
+
+// 唤起 metamask 钱包签名
+const result = await connect(config, {
+  connector: metamask()
+})

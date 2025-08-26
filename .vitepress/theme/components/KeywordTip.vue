@@ -14,7 +14,8 @@
     </template>
 
     <transition name="fade">
-      <div v-if="show" class="tooltip">
+<!--      <Teleport to="body">-->
+        <div v-if="show" class="tooltip">
         <button
           class="tooltip-btn"
           :class="{ 'copied': isCopied }"
@@ -62,6 +63,7 @@
         </button>
         <div class="tooltip-code" v-html="highlighted"></div>
       </div>
+<!--      </Teleport>-->
     </transition>
   </span>
 </template>
@@ -177,8 +179,8 @@ onMounted(() => {
 .tooltip-code pre {
   margin: 0;
   padding: 10px 30px 10px 10px;
+  border-radius: 10px;
 }
-
 .github-light {
   background-color: #f6f6f7 !important;
 }
@@ -253,20 +255,6 @@ onMounted(() => {
   z-index: 50;
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-  overflow: hidden;
-}
-
-/* Shiki 渲染出来的 pre 样式补充 */
-.tooltip-code pre {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  overflow-x: auto;
-  border-radius: 8px;
-  font-family: 'Fira Code', monospace;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 /* 动画 */

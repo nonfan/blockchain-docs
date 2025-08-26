@@ -1,0 +1,4 @@
+import { disconnect } from '@wagmi/core'
+import { config } from './config'
+
+await disconnect(config)

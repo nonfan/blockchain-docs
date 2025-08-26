@@ -1,0 +1,7 @@
+import { getEnsAddress } from '@wagmi/core'
+import { normalize } from 'viem/ens'
+import { config } from './config'
+
+const ensAddress = getEnsAddress(config, {
+  name: normalize('wevm.eth'),
+})

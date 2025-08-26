@@ -1,0 +1,17 @@
+import { estimateGas } from '@wagmi/core'
+import { parseEther } from 'viem'
+import { config } from './config'
+
+// 估算一笔交易的 gas
+const result = await estimateGas(config, {
+  // 发送方地址
+  account: '0xabc...',
+  // 接收方地址
+  to: '0xd2135CfB216b74109775236E36d4b433F1DF507B',
+  // 转账金额 (0.01 ETH)
+  value: parseEther('0.01'),
+  // 可选，合约调用的编码数据
+  data: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+})
+
+console.log('预估 Gas:', result.toString())

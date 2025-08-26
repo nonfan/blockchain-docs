@@ -1,0 +1,15 @@
+/**
+    DApp 有时需要让 用户自己部署合约（比如：创建个人 NFT Collection、
+    开启一个众筹合约、部署一个 DAO Treasury、生成属于自己的多签钱包）。
+*/
+import {deployContract} from '@wagmi/core'
+import config from "./config";
+import ERC20 from './ERC20.json'
+
+const result = await deployContract(config, {
+  abi: ERC20.abi,
+  bytecode: ERC20.bytecode as `0x${string}`,
+  args: ["100000000000"], // 可选合约参数，
+})
+
+console.log(result) // 交易哈希

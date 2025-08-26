@@ -936,6 +936,7 @@ import {getAccount} from '@wagmi/core'
     <tr v-for="action of Actions">
     <th>
       <KeywordTip :href="'https://wagmi.sh/' + action.link" :keyword="action.text" :file="action.file" lang="tsx"></KeywordTip>
+      <DeprecatedIcon v-show="action.deprecated"></DeprecatedIcon>
     </th>
     <th>{{action.description}}</th>
     </tr>
@@ -1260,77 +1261,96 @@ export default config;
 
 :::
 
-### 搞懂wagmi各种库
+### 搞懂 wagmi 各种库
 
 > 搞懂 wagmi、@wagmi/core 和 wagmi/actions 的区别与关系
 
-在使用 wagmi 开发 Web3 应用时，经常会遇到三个名字相似的包：
+在开发 Web3 应用时，你可能会遇到三个名字相似的包：
 
-- `wagmi`
-- `@wagmi/core`
-- `wagmi/actions`
+* `wagmi`
+* `@wagmi/core`
+* `wagmi/actions`
 
-很多同学在写 React dApp 的时候可能会疑惑：
+很多同学在写 React dApp 时会疑惑：
 
-- 为什么有时候官方示例直接 `import { useAccount } from "wagmi"`。
-- 而有些场景下却需要 `@wagmi/core` 或者 `wagmi/actions`?
+* 为什么官方示例可以直接 `import { useAccount } from "wagmi"`？
+* 为什么有些场景需要 `@wagmi/core` 或 `wagmi/actions`？
 
-本文就来彻底梳理它们的定位和关系。
+本文帮你彻底梳理它们的定位和关系。
 
-#### wagmi
+---
 
-> wagmi 是 React 项目专用的包，内部基于 `@wagmi/core` 实现，并封装成了 React Hooks。
+#### 1️⃣ wagmi
 
-常见的 hook 如： [hooks-集合](#hooks-集合)
+> wagmi 是 React 项目专用的库，内部基于 `@wagmi/core` 实现，并封装成了 React Hooks。
 
-导入规则：`import { useAccount, useBalance } from 'wagmi'`
+常用 hook 如：`useAccount`、`useBalance`、`useConnect` 等。
 
-#### @wagmi/core
+```ts
+import {useAccount, useBalance} from 'wagmi'
 
-> `@wagmi/core` 是 wagmi 的 核心底层，它不依赖 React，可以单独在 Node.js、Vue、Svelte、Next.js server actions 等环境中使用。
+const {address, isConnected} = useAccount()
+const {data: balance} = useBalance({address})
+```
 
-它提供的能力主要是：
+* ✅ 只能在 React 组件中使用
+* ✅ 内部依赖 `@wagmi/core`
+* 适合 **前端 DApp** 开发
 
-- 管理链配置（createConfig）
-- 钱包连接器（injected, metaMask, walletConnect 等）
-- 账户与链的全局状态管理
+---
 
-:::code-group
+#### 2️⃣ @wagmi/core
 
-```ts [使用示例（非 React 环境）]
-import {createConfig, getAccount} from '@wagmi/core'
+> @wagmi/core 是 wagmi 的核心底层库，不依赖 React，可以在 Node.js、Vue、SSR 或自定义框架中使用。
+
+主要功能：
+
+* 管理链配置（`createConfig`）
+* 钱包连接器（Injected / MetaMask / WalletConnect 等）
+* 提供 **底层命令式 API**（独立动作调用，如 `getBalance(config, {...})`、`getBlockNumber(config)`），无需显式创建 client
+* 可以在非 React 环境下使用
+
+```ts
+import {createConfig, getAccount, getBalance} from '@wagmi/core'
 import {http} from 'viem'
 import {mainnet} from 'viem/chains'
 
 const config = createConfig({
   chains: [mainnet],
-  transports: {[mainnet.id]: http()}
+  transports: {[mainnet.id]: http()},
 })
 
-console.log(getAccount(config))  // 获取当前账户信息
+console.log(getAccount(config)) // 获取当前账户信息
+const balance = await getBalance(config, {address: '0x123...'})
+console.log(balance.formatted)
 ```
 
-:::
+适用场景：
 
-> [!TIP] 适用场景
-> - 不依赖 React 的项目
-> - SSR / 后端脚本
-> - 自定义框架
+* SSR / Node.js 脚本
+* Vue、Svelte、Next.js server actions
+* 不依赖 React 的前端项目
 
-#### wagmi/actions
+---
 
-> `wagmi/actions` 是一组独立的**工具函数**，提供了对链的命令式调用（imperative API），不需要 React Hook。
+#### 3️⃣ wagmi/actions
 
-它依赖 `@wagmi/core` 的 config，常见的 API 有：[actions-集合](#actions-集合)
+> wagmi/actions 是一组独立函数（actions），提供命令式调用（imperative API），依赖 `@wagmi/core` 的 client 或 config。
+
+特点：
+
+* 树摇优化（tree-shakable），只打包你导入的函数
+* 需要显式传入 client（publicClient / getClient）
+* 适合大型前端 DApp 或对 bundle 体积敏感的项目
 
 ```ts
 import {getBalance, writeContract} from 'wagmi/actions'
-import {config} from './config'
+import {publicClient} from './client'
 
-const balance = await getBalance(config, {address: '0x123...'})
+const balance = await getBalance(publicClient, {address: '0x123...'})
 console.log(balance.formatted)
 
-await writeContract(config, {
+await writeContract(publicClient, {
   address: '0xTokenAddress',
   abi: erc20Abi,
   functionName: 'transfer',
@@ -1338,6 +1358,136 @@ await writeContract(config, {
 })
 ```
 
-> [!TIP] 适用场景
-> - 不想用 Hook，只需要直接发起一次请求
-> - 在脚本、服务端或工具函数中调用区块链操作
+适用场景：
+
+* 想要完全命令式调用，不使用 Hook
+* 脚本、工具函数、服务端调用
+* 优化前端 bundle 体积
+
+---
+
+#### 4️⃣ 三者对比
+
+| 特性          | wagmi                        | @wagmi/core                           | wagmi/actions               |
+|-------------|------------------------------|---------------------------------------|-----------------------------|
+| 依赖环境        | React                        | 任意 JS/TS 环境                           | 任意 JS/TS 环境                 |
+| API 类型      | Hook（useAccount, useBalance） | 独立动作 / 配置管理 / 钱包连接                    | 独立函数（命令式）                   |
+| 是否依赖 React  | ✅                            | ❌                                     | ❌                           |
+| 是否需要 client | ❌                            | 可选（独立动作可直接传 config）                   | ✅ 必须传 client                |
+| 树摇优化        | ⚠️ 不完全                       | ✅（新版本支持独立动作）                          | ✅ 完全 tree-shakable          |
+| 适用场景        | 前端 React DApp                | SSR / Node.js / Vue / 脚本 / 非 React 前端 | 前端优化 / 大型 DApp / 脚本 / 命令式调用 |
+
+---
+
+💡 **总结**
+
+1. **React 项目** → 用 `wagmi`，直接使用 Hook 最方便
+2. **非 React / SSR / Node.js** → 用 `@wagmi/core`，可直接调用独立动作
+3. **前端 DApp 优化 bundle / 命令式调用** → 用 `wagmi/actions`，完全 tree-shakable，支持 client 管理
+
+### TypeScript 类型安全
+
+**TypeScript 要求:**
+> Wagmi Core 很注重类型安全，意思是它可以帮你在写代码时提前发现错误，而不是等到程序跑起来才报错。
+
+- 需要 TypeScript >= 5.0.4
+- TypeScript 的小版本有时候会破坏类型，所以建议：
+    - 固定 @wagmi/core 和 typescript 的版本
+    - 升级时注意类型可能会变
+- 非类型相关的功能遵循版本规范（不会乱改）
+- tsconfig.json 一定要打开严格模式：
+
+```json 
+{
+  "compilerOptions": {
+    "strict": true
+  }
+}
+```
+
+**如何正确使用 ABI 和 Typed Data（函数、数据定义）:**
+
+Wagmi 可以根据你写的合约 ABI 自动帮你推断函数名和参数类型，这样：
+- 写函数时自动提示函数名
+- 拼写错会直接报错
+- 自动推断函数参数和返回值类型
+
+怎么实现：必须给 ABI 或 Typed Data 用 as const 或者在调用时直接写在配置里。
+
+```ts
+import { readContract } from '@wagmi/core'
+
+// 用 const 确定 ABI
+const erc721Abi = [
+  {
+    name: 'balanceOf',
+    type: 'function',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }]
+  },
+] as const
+
+const result = await readContract({
+  address: '0xFBA3912Ca04dd458c843e2EE08967fC04f3579c2',
+  abi: erc721Abi,
+  functionName: 'balanceOf',
+  args: ['0xA0Cf798816D4b9b9866b5330EEa46a18382f251e'],
+})
+```
+
+如果没有 `as const`，TypeScript 就不知道函数名只能是 `balanceOf`，拼写错了也不会报错。
+
+#### Wagmi CLI
+
+TypeScript 不能直接把 JSON 文件当 `const` 用
+
+Wagmi 提供 CLI 工具：
+
+- 可以从 Etherscan、Hardhat、Foundry 自动拿 ABI
+- 自动生成 const 类型的 ABI
+- 保证类型推断正确
+
+:::code-group
+
+```bash [手动安装]
+npm install --save-dev @wagmi/cli
+
+# yarn
+yarn add -D @wagmi/cli
+```
+
+```bash [创建配置文件]
+npx wagmi init
+
+# yarn
+yarn wagmi init
+```
+
+```ts [wagmi.config.ts]
+import { defineConfig } from '@wagmi/cli'
+
+export default defineConfig({
+  out: 'src/generated.ts',
+  contracts: [],
+  plugins: [],
+})
+```
+:::
+
+
+`wagmi.config.ts` 配置文件引入 abi json 文件，运行 `npx wagmi generate` 转化成安全类型文件，生成至 `./src/generated`。
+
+```ts
+import { defineConfig } from '@wagmi/cli'
+import {abi} from "@/lib/ERC20";
+
+export default defineConfig({
+  out: 'src/generated', // 输出文件夹，生成的 ABI 和类型会放这里
+  contracts: [
+    {
+      name: 'erc20',
+      abi: abi
+    },
+  ],
+})
+```

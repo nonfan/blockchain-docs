@@ -1,0 +1,34 @@
+import { multicall } from '@wagmi/core'
+import { config } from './config'
+
+const wagmigotchiContract = {
+  address: '0xecb504d39723b0be0e3a9aa33d646642d1051ee1',
+  abi: wagmigotchiABI,
+} as const
+const mlootContract = {
+  address: '0x1dfe7ca09e99d10835bf73044a23b73fc20623df',
+  abi: mlootABI,
+} as const
+
+const result = await multicall(config, {
+  contracts: [
+    {
+      ...wagmigotchiContract,
+      functionName: 'getAlive',
+    },
+    {
+      ...wagmigotchiContract,
+      functionName: 'getBoredom',
+    },
+    {
+      ...mlootContract,
+      functionName: 'getChest',
+      args: [69],
+    },
+    {
+      ...mlootContract,
+      functionName: 'getWaist',
+      args: [69],
+    },
+  ],
+})

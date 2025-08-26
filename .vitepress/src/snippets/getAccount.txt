@@ -1,0 +1,4 @@
+import { getAccount } from '@wagmi/core'
+import { config } from './config'
+
+const account = getAccount(config)

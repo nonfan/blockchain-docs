@@ -1,0 +1,9 @@
+import { readContract } from '@wagmi/core'
+import { abi } from './abi'
+import { config } from './config'
+
+const result = await readContract(config, {
+  abi,
+  address: '0x6b175474e89094c44da98b954eedeac495271d0f',
+  functionName: 'totalSupply',
+})

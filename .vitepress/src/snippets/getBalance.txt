@@ -1,0 +1,6 @@
+import { getBalance } from '@wagmi/core'
+import { config } from './config'
+
+const balance = getBalance(config, {
+  address: '0x4557B18E779944BFE9d78A672452331C186a9f48',
+})

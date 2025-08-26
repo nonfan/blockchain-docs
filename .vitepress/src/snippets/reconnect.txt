@@ -1,0 +1,9 @@
+/**
+自动恢复之前的连接状态。
+调用时机：页面刷新/应用初始化时，尝试重连用户上次用过的钱包。
+*/
+import { reconnect } from '@wagmi/core'
+import { injected } from '@wagmi/connectors'
+import { config } from './config'
+
+const result = await reconnect(config, { connectors: [injected()] })
