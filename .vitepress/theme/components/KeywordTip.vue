@@ -176,7 +176,7 @@ onMounted(() => {
 <style>
 .tooltip-code pre {
   margin: 0;
-  padding: 10px;
+  padding: 10px 30px 10px 10px;
 }
 
 .github-light {
@@ -204,7 +204,7 @@ onMounted(() => {
 .tooltip-btn {
   position: absolute;
   top: 6px;
-  right: 6px;
+  right: 2px;
   border: none;
   border-radius: 4px;
   padding: 4px;
