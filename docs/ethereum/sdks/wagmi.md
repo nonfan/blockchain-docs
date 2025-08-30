@@ -1,4 +1,4 @@
-<script setup>import * as data from '../../.vitepress/data/wagmi';
+<script setup>import * as data from '../../../.vitepress/data/wagmi';
 const Hooks = data.Hooks;
 const Actions = data.Actions;
 </script>
@@ -492,6 +492,19 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 // Web 组件是不需要导入的全局 html 元素。
 export default function ConnectButton() {
   return <appkit-button/>
+}
+```
+
+```ts [types.d.ts]
+import * as React from 'react'
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'appkit-button': React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>;
+      // Add other custom elements here if needed
+    }
+  }
 }
 ```
 

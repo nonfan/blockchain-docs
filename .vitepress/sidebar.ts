@@ -32,10 +32,39 @@ export function getSidebar(): Record<string, SidebarItem[]> {
       {
         text: "公链",
         items: [
+
+          {
+            text: 'Solana',
+            collapsed: true,
+            icon: 'solana.svg',
+            items: [
+              { text: '公链概览', link: '/solana/intro' },
+              {
+                text: '代币',
+                items: [
+                  { text: '同质化代币', link: '/solana/token/ft' },
+                  { text: '非同质化代币', link: '/solana/token/nft' },
+                ],
+              },
+            ],
+          },
+          {
+            text: 'Sui',
+            collapsed: true,
+            icon: 'sui.svg',
+            items: [
+              { text: '公链概览', link: '/sui/intro' },
+            ],
+          },
+        ]
+      },
+      {
+        text: "EVM链",
+        items: [
           {
             text: 'Ethereum',
             collapsed: true,
-            icon: '/ethereum.svg',
+            icon: 'ethereum.svg',
             items: [
               {
                 text: '公链概览',
@@ -76,37 +105,9 @@ export function getSidebar(): Record<string, SidebarItem[]> {
             ],
           },
           {
-            text: 'Solana',
-            collapsed: true,
-            icon: '/solana.svg',
-            items: [
-              { text: '公链概览', link: '/solana/intro' },
-              {
-                text: '代币',
-                items: [
-                  { text: '同质化代币', link: '/solana/token/ft' },
-                  { text: '非同质化代币', link: '/solana/token/nft' },
-                ],
-              },
-            ],
-          },
-          {
-            text: 'Sui',
-            collapsed: true,
-            icon: '/sui.svg',
-            items: [
-              { text: '公链概览', link: '/sui/intro' },
-            ],
-          },
-        ]
-      },
-      {
-        text: "EVM兼容链",
-        items: [
-          {
             text: 'VeChain',
             collapsed: true,
-            icon: '/vet.svg',
+            icon: 'vet.svg',
             items: [
               { text: '公链概览', link: '/vechain/intro' },
               { text: '合约部署升级', link: '/vechain/contract-deploy' },
@@ -114,7 +115,26 @@ export function getSidebar(): Record<string, SidebarItem[]> {
                 text: 'SDKs',
                 collapsed: false,
                 items: [
-                  { text: 'Connex', link: '/vechain/sdks/connex' }
+                  {
+                    text: "SDK",
+                    collapsed: false,
+                    items: [
+                      { text: "ThorClient", link: '/vechain/sdks/sdk/thor-client' },
+                      { text: "Clause", link: '/vechain/sdks/sdk/clause' },
+                      { text: "Transaction", link: '/vechain/sdks/sdk/transaction' },
+                      { text: "Contract", link: '/vechain/sdks/sdk/contract' },
+                      { text: "Utils", link: '/vechain/sdks/sdk/utils' },
+                      { text: "Wallet", link: '/vechain/sdks/sdk/wallet' }
+                    ]
+                  },
+                  { text: 'Connex', link: '/vechain/sdks/connex' },
+                  {
+                    text: 'React Usages',
+                    collapsed: false,
+                    items: [
+                      { text: "自签名交易", link: "/vechain/sdks/react-usages/self-signature" }
+                    ]
+                  }
                 ],
               },
             ],
@@ -122,7 +142,7 @@ export function getSidebar(): Record<string, SidebarItem[]> {
           {
             text: 'Monad',
             collapsed: true,
-            icon: '/monad.svg',
+            icon: 'monad.svg',
             items: [
               { text: '公链概览', link: '/monad/intro' },
             ],

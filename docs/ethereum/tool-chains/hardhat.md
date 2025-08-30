@@ -179,7 +179,7 @@ hh compile
 > HRE（Hardhat Runtime Environment）是 Hardhat 在运行任务、测试或脚本时提供的核心对象，几乎可以理解为“Hardhat 本身”。
 
 ```js
-const hardhat = require("hardhat")
+const hardhat = require("./hardhat")
 ```
 
 **HRE 实例:**

@@ -4,13 +4,19 @@ import {getSidebar} from "./sidebar";
 import { transformerTwoslash, defaultHoverInfoProcessor } from '@shikijs/vitepress-twoslash'
 import KeywordTipPlugin from './plugins/keywordTipPlugin'
 
+// 根据环境决定 base 路径
+const base = process.env.NODE_ENV === 'production' ? '/blockchain-docs/' : '/'
+
 export default defineConfig({
+  srcDir: './docs',
+  outDir: '../dist',           // 输出到根目录的 dist 文件夹
+  cacheDir: '.vitepress/cache',
   lang: "zh",
-  base: "/blockchain-docs",
+  base,
   title: "区块链",
   cleanUrls: true,
   description: "区块链最初因比特币而流行，目前已广泛应用于加密货币、智能合约、去中心化金融（DeFi）、NFT、供应链溯源等领域。",
-  head: [['link', {rel: 'icon', href: '/blockchain-docs/logo.svg'}]],
+  head: [['link', {rel: 'icon', href: `${base}logo.svg`}]],
   themeConfig: {
     logo: "/logo.svg",
     sidebar: getSidebar(),

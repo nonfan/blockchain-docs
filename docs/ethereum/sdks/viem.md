@@ -29,7 +29,7 @@ yarn add viem
 **快速引入:**
 
 ```js
-import {createPublicClient, http} from 'viem';
+import {createPublicClient, http} from './viem';
 import {mainnet} from 'viem/chains';
 
 const client = createPublicClient({
