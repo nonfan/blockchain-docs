@@ -495,6 +495,19 @@ export default function ConnectButton() {
 }
 ```
 
+```ts [types.d.ts]
+import * as React from 'react'
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'appkit-button': React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>;
+      // Add other custom elements here if needed
+    }
+  }
+}
+```
+
 ```tsx [Hook组件]
 import {useAppKit} from "@reown/appkit/react";
 
