@@ -132,7 +132,7 @@ export function getSidebar(): Record<string, SidebarItem[]> {
                     text: 'React Usages',
                     collapsed: false,
                     items: [
-                      { text: "自签名交易", link: "/vechain/sdks/react-usages/self-signature" }
+                      { text: "自签名交易", link: "/vechain/sdks/react-usage/self-signature" }
                     ]
                   }
                 ],
