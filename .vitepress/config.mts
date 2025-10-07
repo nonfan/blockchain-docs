@@ -9,7 +9,7 @@ const base = "/blockchain-docs"
 
 export default defineConfig({
   srcDir: './docs',
-  outDir: '../dist',           // 输出到根目录的 dist 文件夹
+  outDir: '.vitepress/dist',           // 输出到根目录的 dist 文件夹
   cacheDir: '.vitepress/cache',
   lang: "zh",
   base,
