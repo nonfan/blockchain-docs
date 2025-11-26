@@ -79,11 +79,31 @@ export function getSidebar(): Record<string, SidebarItem[]> {
                   { text: '合约交互机制', link: '/ethereum/solidity/03_interactions' },
                   { text: '代币标准与常见合约', link: '/ethereum/solidity/04_tokens' },
                   { text: '模块化设计', link: '/ethereum/solidity/05_modules' },
-                  { text: '安全防护', link: '/ethereum/solidity/06_security' },
-                  { text: '测试', link: '/ethereum/solidity/07_testing' },
-                  { text: '部署', link: '/ethereum/solidity/08_deployment' },
-                  { text: '进阶特性', link: '/ethereum/solidity/09_advanced' },
-                  { text: '生态标准与工具链', link: '/ethereum/solidity/10_ecosystem' },
+                  { text: '生态标准与工具链', collapsed: true, items: [
+                    {
+                      text: 'OpenZeppelin', collapsed: true, items: [
+                        {
+                          text: "Install", link: "/ethereum/solidity/ecosystem/openzeppelin/00_install.md"
+                        },
+                        {
+                          text: "Utils", link: "/ethereum/solidity/ecosystem/openzeppelin/01_utils"
+                        },
+                        {
+                          text: "Access", link: "/ethereum/solidity/ecosystem/openzeppelin/02_access"
+                        },
+                        {
+                          text: "Token", link: "/ethereum/solidity/ecosystem/openzeppelin/03_token"
+                        },
+                        {
+                          text: "Proxy", link: "/ethereum/solidity/ecosystem/openzeppelin/04_proxy"
+                        },
+                        {
+                          text: "Governance", link: "/ethereum/solidity/ecosystem/openzeppelin/05_governance"
+                        },
+                    ]
+                    },
+                    { text: 'Hardhat', link: '/ethereum/solidity/ecosystem/hardhat' },
+                  ] },
                 ],
               },
               {
@@ -93,13 +113,6 @@ export function getSidebar(): Record<string, SidebarItem[]> {
                   { text: 'JSON-RPC', link: '/ethereum/sdks/json-rpc' },
                   { text: 'Viem', link: '/ethereum/sdks/viem' },
                   { text: 'Wagmi', link: '/ethereum/sdks/wagmi' },
-                ],
-              },
-              {
-                text: '工具链',
-                items: [
-                  { text: 'Hardhat', link: '/ethereum/tool-chains/hardhat' },
-                  { text: 'Foundry', link: '/ethereum/tool-chains/foundry' },
                 ],
               },
             ],
