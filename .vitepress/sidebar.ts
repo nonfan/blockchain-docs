@@ -100,9 +100,13 @@ export function getSidebar(): Record<string, SidebarItem[]> {
                         {
                           text: "Governance", link: "/ethereum/solidity/ecosystem/openzeppelin/05_governance"
                         },
+                        {
+                          text: "Security", link: "/ethereum/solidity/ecosystem/openzeppelin/06_security"
+                        },
                     ]
                     },
                     { text: 'Hardhat', link: '/ethereum/solidity/ecosystem/hardhat' },
+                    { text: 'Testing', link: '/ethereum/solidity/ecosystem/testing' },
                   ] },
                 ],
               },

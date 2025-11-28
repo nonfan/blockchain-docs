@@ -1,115 +1,476 @@
 # Utils
 
-> 基础工具，所有合约都在用
+> 基础工具库：让 Solidity 开发更高效
+
+> [!IMPORTANT] 本节重点
+> 1. 如何进行安全的类型转换？
+> 2. 字符串处理的最佳实践是什么？
+> 3. 数学运算如何防止溢出？
+> 4. 数据结构（Set、Map）如何使用？
+> 5. 如何优化 Gas 消耗？
 
 ## Context
 
-OpenZeppelin 为了兼容 meta-transaction（元交易），因此包装 `msg.sender` 和 `msg.data`。
+**Context** 是所有 OpenZeppelin 合约的基础抽象，提供了对 `msg.sender` 和 `msg.data` 的封装。
 
-> 用户并不直接发送交易, 而是签名 → 由“中继者 relayer”帮他发 msg.sender = relayer，不是用户,但你希望“业务逻辑中的 sender == 用户本人”
+### 为什么需要 Context？
 
-因此 meta-tx 环境中，上层合约会 override msgSender：
+在普通合约中直接使用 `msg.sender` 是安全的，但在**元交易（Meta-Transaction）**场景下，实际用户和交易发送者不同：
 
-```solidity
+```mermaid
+sequenceDiagram
+    participant 用户
+    participant Relayer 中继者
+    participant 合约
+
+    用户->>Relayer: 签名消息（不发送交易）
+    Relayer->>合约: 发送交易（msg.sender = Relayer）
+    Note over 合约: 需要从 msg.data 中提取真实用户地址
+
+    style Relayer fill:#FFD700
+    style 合约 fill:#87CEEB
+```
+
+### 实现原理
+
+:::code-group
+
+```solidity [Context 源码]
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.0.1) (utils/Context.sol)
 
 pragma solidity ^0.8.20;
 
+/**
+ * @dev 提供 msg.sender 和 msg.data 的抽象
+ * 支持元交易场景下的真实调用者识别
+ */
 abstract contract Context {
+    /**
+     * @dev 返回调用者地址
+     * 元交易合约可以重写此函数提取真实用户
+     */
     function _msgSender() internal view virtual returns (address) {
         return msg.sender;
     }
 
+    /**
+     * @dev 返回调用数据
+     */
     function _msgData() internal view virtual returns (bytes calldata) {
         return msg.data;
     }
 
+    /**
+     * @dev 返回上下文后缀长度（元交易使用）
+     */
     function _contextSuffixLength() internal view virtual returns (uint256) {
         return 0;
     }
 }
 ```
 
-```solidity
+```solidity [元交易示例：提取真实调用者]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
-contract Utils is Context {
-    function getSender() public view returns (address) {
-        return _msgSender();
+/**
+ * @dev 支持元交易的合约
+ * 调用数据格式：[原始数据] + [真实用户地址(20 bytes)]
+ */
+contract MetaTxContract is Context {
+    mapping(address => uint256) public balances;
+
+    /**
+     * @dev 重写 _msgSender，从 msg.data 末尾提取真实用户
+     */
+    function _msgSender() internal view override returns (address) {
+        if (msg.data.length >= 20) {
+            // 提取最后 20 字节作为真实用户地址
+            return address(uint160(bytes20(msg.data[msg.data.length - 20:])));
+        }
+        return msg.sender;
+    }
+
+    function _contextSuffixLength() internal pure override returns (uint256) {
+        return 20; // 地址长度
+    }
+
+    /**
+     * @dev 存款函数（使用 _msgSender()）
+     */
+    function deposit() external payable {
+        address user = _msgSender(); // 获取真实用户
+        balances[user] += msg.value;
     }
 }
 ```
 
+:::
+
+**最佳实践**：
+- ✅ 所有 OpenZeppelin 合约都继承 Context
+- ✅ 使用 `_msgSender()` 代替 `msg.sender`
+- ✅ 使用 `_msgData()` 代替 `msg.data`
+
 ## Strings
 
-`using Strings for uint256;` 的作用是让 uint256 类型可以直接调用 Strings 库的函数，比如 `value.toString()`。
+**Strings** 库提供了强大的字符串操作功能，特别适用于 NFT metadata、链上数据展示等场景。
 
-```solidity
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-// 或者 import "@openzeppelin/contracts/utils/Strings.sol";
+### 核心功能总览
 
-contract Utils {
-    using Strings for uint256;
-}
-```
+| 分类        | 函数                           | 功能                    | 示例                                     |
+| --------- | ---------------------------- | --------------------- | -------------------------------------- |
+| 数值转字符串    | `toString(uint256)`          | uint → 十进制字符串         | `Strings.toString(123)` → `"123"`      |
+|           | `toStringSigned(int256)`     | int → 十进制字符串（支持负数）    | `toStringSigned(-42)` → `"-42"`        |
+|           | `toHexString(uint256)`       | uint → 十六进制字符串        | `toHexString(255)` → `"0xff"`          |
+|           | `toHexString(uint256, uint)` | 固定长度十六进制             | `toHexString(15, 4)` → `"0x000f"`      |
+| 地址转字符串    | `toHexString(address)`       | 地址 → 十六进制字符串         | `toHexString(addr)` → `"0x123..."`     |
+|           | `toChecksumHexString(addr)`  | 地址 → EIP-55 校验和格式     | `"0xAbC123..."` (大小写混合)               |
+| 字符串转数值    | `parseUint(string)`          | 字符串 → uint256         | `parseUint("123")` → `123`             |
+|           | `parseInt(string)`           | 字符串 → int256          | `parseInt("-42")` → `-42`              |
+|           | `parseHexUint(string)`       | 十六进制字符串 → uint        | `parseHexUint("0xff")` → `255`         |
+|           | `parseAddress(string)`       | 字符串 → address         | `parseAddress("0x123...")` → `address` |
+| 安全解析      | `tryParseUint(string)`       | 安全解析 uint（不会 revert） | 返回 `(bool success, uint value)`        |
+| JSON 转义   | `escapeJSON(string)`         | 转义 JSON 特殊字符          | `"\"Hello\\nWorld\""` → `"\"Hello\\\\nWorld\""` |
+| 比较        | `equal(string, string)`      | 字符串相等比较               | `equal("a", "a")` → `true`             |
 
-| 模块          | 方法                               | 功能                     | 输入           | 输出    | 注意 / 示例                       |
-| ------------- | ---------------------------------- | ------------------------ | -------------- | ------- | --------------------------------- |
-| 数值 ↔ 字符串 | `toString(uint256)`                | uint → 十进制字符串      | uint256        | string  | `Strings.toString(123)` → `"123"` |
-|               | `toStringSigned(int256)`           | int → 十进制字符串       | int256         | string  | 支持负数                          |
-|               | `toHexString(uint256)`             | uint → 十六进制          | uint256        | string  | 自动长度                          |
-| 地址 ↔ 字符串 | `toHexString(address)`             | 地址 → 不校验十六进制    | address        | string  | "0x..."                           |
-|               | `toChecksumHexString(address)`     | 地址 → EIP-55 校验地址   | address        | string  | `"0xAbC123..."`                   |
-| 字符串解析    | `parseUint` / `tryParseUint`       | 字符串 → uint256         | string         | uint256 | 非法字符会 revert / 返回 false    |
-|               | `parseInt` / `tryParseInt`         | 字符串 → int256          | string         | int256  | 支持符号                          |
-|               | `parseHexUint` / `tryParseHexUint` | 十六进制字符串 → uint256 | string         | uint256 | 支持 "0x"                         |
-|               | `parseAddress` / `tryParseAddress` | 字符串 → address         | string         | address | 支持 "0x"                         |
-| JSON 转义     | `escapeJSON`                       | 转义特殊字符             | string         | string  | 用于 NFT metadata                 |
-| 工具 / 内部   | `_tryParseChr`                     | ASCII → 数值             | bytes1         | uint8   | 内部方法                          |
-|               | `_unsafeReadBytesOffset`           | 读取 bytes32             | bytes, uint256 | bytes32 | 内部方法                          |
-
-## Math
-
-OpenZeppelin 的 `Math.sol` 是以太坊上最强、最底层的数学工具库。
-
-| 功能                              | 用途                                         |
-| --------------------------------- | -------------------------------------------- |
-| 512 位加法、乘法                  | 解决 uint256 无法存储超大值的问题            |
-| 安全数学运算（tryAdd、tryMul 等） | 不 revert，返回是否成功                      |
-| 饱和运算（saturatingAdd 等）      | 溢出时返回最大值                             |
-| 进位无分支函数（ternary）         | 节约 gas                                     |
-| 全精度除法（mulDiv）              | 防止溢出、用于精确计算，如 Uniswap、流动性池 |
-| 左右移乘法（mulShr）              | 位运算场景                                   |
-| 模逆 invMod                       | 求 modular inverse（加密学常用）             |
-| 模幂 modExp                       | 调用 EIP-198 预编译合约                      |
+### 实战示例
 
 :::code-group
 
-```solidity [add512]
-pragma solidity ^0.8.28;
+```solidity [NFT Metadata 生成]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
+
+/**
+ * @dev 链上 NFT metadata 生成
+ */
+contract OnChainNFT {
+    using Strings for uint256;
+    using Strings for address;
+
+    struct Attributes {
+        string name;
+        uint256 level;
+        uint256 power;
+    }
+
+    mapping(uint256 => Attributes) public tokenAttributes;
+
+    /**
+     * @dev 生成完整的 NFT metadata JSON
+     */
+    function tokenURI(uint256 tokenId) external view returns (string memory) {
+        Attributes memory attr = tokenAttributes[tokenId];
+
+        // 构建 JSON
+        string memory json = string(abi.encodePacked(
+            '{"name":"',
+            attr.name,
+            '","tokenId":',
+            tokenId.toString(),
+            ',"attributes":[',
+            '{"trait_type":"Level","value":',
+            attr.level.toString(),
+            '},',
+            '{"trait_type":"Power","value":',
+            attr.power.toString(),
+            '}]}'
+        ));
+
+        // Base64 编码
+        return string(abi.encodePacked(
+            "data:application/json;base64,",
+            Base64.encode(bytes(json))
+        ));
+    }
+
+    /**
+     * @dev 生成 SVG 图像
+     */
+    function generateSVG(uint256 tokenId) external view returns (string memory) {
+        Attributes memory attr = tokenAttributes[tokenId];
+
+        string memory svg = string(abi.encodePacked(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">',
+            '<text x="10" y="30">',
+            attr.name,
+            '</text>',
+            '<text x="10" y="60">Level: ',
+            attr.level.toString(),
+            '</text>',
+            '<text x="10" y="90">Power: ',
+            attr.power.toString(),
+            '</text>',
+            '</svg>'
+        ));
+
+        return string(abi.encodePacked(
+            "data:image/svg+xml;base64,",
+            Base64.encode(bytes(svg))
+        ));
+    }
+}
+```
+
+```solidity [地址格式化和验证]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+
+contract AddressFormatter {
+    using Strings for address;
+
+    /**
+     * @dev 返回 EIP-55 校验和地址
+     */
+    function getChecksumAddress(address addr) external pure returns (string memory) {
+        return addr.toChecksumHexString();
+    }
+
+    /**
+     * @dev 从字符串解析地址（带错误处理）
+     */
+    function parseAddressSafe(string memory addressStr)
+        external
+        pure
+        returns (bool success, address addr)
+    {
+        return Strings.tryParseAddress(addressStr);
+    }
+
+    /**
+     * @dev 验证地址字符串格式
+     */
+    function isValidAddress(string memory addressStr)
+        external
+        pure
+        returns (bool)
+    {
+        (bool success, ) = Strings.tryParseAddress(addressStr);
+        return success;
+    }
+}
+```
+
+```solidity [安全的数值解析]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+
+/**
+ * @dev 从链下数据安全解析数值
+ */
+contract SafeParser {
+    event ParseResult(bool success, uint256 value);
+
+    /**
+     * @dev 安全解析用户输入（不会 revert）
+     */
+    function parseUserInput(string memory input) external returns (uint256) {
+        (bool success, uint256 value) = Strings.tryParseUint(input);
+
+        emit ParseResult(success, value);
+
+        if (!success) {
+            return 0; // 解析失败返回默认值
+        }
+
+        return value;
+    }
+
+    /**
+     * @dev 解析十六进制输入
+     */
+    function parseHexInput(string memory hexStr) external returns (uint256) {
+        (bool success, uint256 value) = Strings.tryParseHexUint(hexStr);
+
+        if (!success) {
+            revert("Invalid hex string");
+        }
+
+        return value;
+    }
+}
+```
+
+:::
+
+## Math
+
+**Math** 库提供了完整的数学运算功能，是 DeFi 协议的必备工具。
+
+### 核心功能
+
+| 分类       | 函数                      | 功能                       | 应用场景               |
+| -------- | ----------------------- | ------------------------ | ------------------ |
+| 基础运算     | `max(a, b)` / `min(a, b)` | 最大/最小值                   | 价格比较、阈值判断          |
+|          | `average(a, b)`         | 平均值（防溢出）                 | 价格平均、份额计算          |
+|          | `ceilDiv(a, b)`         | 向上取整除法                   | 分配代币、计算手续费         |
+|          | `mulDiv(a, b, c)`       | `(a * b) / c`（全精度）      | Uniswap 价格计算       |
+| 512 位运算 | `add512(a, b)`          | 512 位加法                  | 超大数值计算             |
+|          | `mul512(a, b)`          | 512 位乘法                  | 高精度流动性计算           |
+| 安全运算     | `tryAdd(a, b)`          | 安全加法（返回 bool）            | 检查溢出而不 revert      |
+|          | `tryMul(a, b)`          | 安全乘法                     | 同上                 |
+| 饱和运算     | `saturatingAdd(a, b)`   | 饱和加法（溢出返回 max）           | 积分系统、奖励累积          |
+|          | `saturatingMul(a, b)`   | 饱和乘法                     | 同上                 |
+| 平方根      | `sqrt(a)`               | 平方根（向下取整）                | AMM 价格计算、几何平均      |
+|          | `sqrtRatio(a, b)`       | `sqrt(a / b)`（高精度）      | Uniswap V3 价格计算   |
+| 对数       | `log2(a)` / `log10(a)`  | 对数计算                     | 幂次计算、难度调整          |
+|          | `log256(a)`             | 以 256 为底的对数              | 编码优化               |
+| 模运算      | `invMod(a, p)`          | 模逆运算                     | 密码学、椭圆曲线           |
+|          | `modExp(b, e, m)`       | 模幂运算 `b^e mod m`         | RSA、零知识证明          |
+
+### 实战示例
+
+:::code-group
+
+```solidity [DeFi 价格计算]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract Utils {
+/**
+ * @dev AMM 价格计算（类似 Uniswap）
+ */
+contract AMMPool {
+    using Math for uint256;
+
+    uint256 public reserveA; // 代币 A 储备
+    uint256 public reserveB; // 代币 B 储备
+
+    uint256 constant FEE = 30; // 0.3% 手续费
+
     /**
-     * @dev 计算两个 uint256 无符号整数 a 和 b 的和，并返回 512 位结果的高低位。
-     *
-     * 这个函数使用 OpenZeppelin 的 Math.add512 实现，可以检测溢出：
-     * - `low` 代表结果的低 256 位（即普通加法结果的低位，如果溢出会回绕）。
-     * - `high` 代表结果的高 256 位（如果发生溢出，则 high = 1，否则 high = 0）。
-     *
-     * 示例：
-     * a = 2**256 - 1, b = 1
-     * sum(a, b) => high = 1, low = 0
-     *
-     * @param a 第一个加数
-     * @param b 第二个加数
-     * @return high 高位（如果溢出为 1，否则为 0）
-     * @return low 低位（加法结果的低 256 位）
+     * @dev 计算输出数量（恒定乘积公式）
+     * amountOut = (reserveB * amountIn * 997) / (reserveA * 1000 + amountIn * 997)
      */
-    function sum(uint256 a, uint256 b) public pure returns (uint256 high, uint256 low) {
-        return Math.add512(a, b);
+    function getAmountOut(uint256 amountIn, bool isAtoB)
+        external
+        view
+        returns (uint256)
+    {
+        uint256 reserveIn = isAtoB ? reserveA : reserveB;
+        uint256 reserveOut = isAtoB ? reserveB : reserveA;
+
+        // 使用 mulDiv 防止中间值溢出
+        uint256 amountInWithFee = amountIn * (1000 - FEE);
+        uint256 numerator = amountInWithFee * reserveOut;
+        uint256 denominator = reserveIn * 1000 + amountInWithFee;
+
+        return Math.mulDiv(numerator, 1, denominator);
+    }
+
+    /**
+     * @dev 计算流动性份额（几何平均）
+     */
+    function calculateLiquidity(uint256 amountA, uint256 amountB)
+        external
+        pure
+        returns (uint256)
+    {
+        // liquidity = sqrt(amountA * amountB)
+        return Math.sqrt(amountA * amountB);
+    }
+
+    /**
+     * @dev 安全的手续费计算（向上取整）
+     */
+    function calculateFee(uint256 amount) external pure returns (uint256) {
+        // fee = ceil(amount * 0.3%)
+        return Math.ceilDiv(amount * FEE, 10000);
+    }
+}
+```
+
+```solidity [奖励分配系统]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+/**
+ * @dev 质押奖励分配
+ */
+contract StakingRewards {
+    using Math for uint256;
+
+    mapping(address => uint256) public stakes;
+    uint256 public totalStaked;
+    uint256 public rewardPool;
+
+    /**
+     * @dev 计算用户奖励份额（防溢出）
+     * reward = (userStake * rewardPool) / totalStaked
+     */
+    function calculateReward(address user) external view returns (uint256) {
+        if (totalStaked == 0) return 0;
+
+        // 使用 mulDiv 保证精度和防溢出
+        return Math.mulDiv(stakes[user], rewardPool, totalStaked);
+    }
+
+    /**
+     * @dev 计算平均质押量
+     */
+    function getAverageStake(address[] memory users)
+        external
+        view
+        returns (uint256)
+    {
+        if (users.length == 0) return 0;
+
+        uint256 sum = 0;
+        for (uint256 i = 0; i < users.length; i++) {
+            // 使用饱和加法防止溢出
+            sum = Math.saturatingAdd(sum, stakes[users[i]]);
+        }
+
+        return sum / users.length;
+    }
+}
+```
+
+```solidity [512 位高精度计算]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+/**
+ * @dev 超大数值计算
+ */
+contract HighPrecisionMath {
+    /**
+     * @dev 检查两个 uint256 相加是否溢出
+     */
+    function checkAddOverflow(uint256 a, uint256 b)
+        external
+        pure
+        returns (bool overflow, uint256 high, uint256 low)
+    {
+        (high, low) = Math.add512(a, b);
+        overflow = (high != 0);
+    }
+
+    /**
+     * @dev 计算 a * b 的完整结果（512 位）
+     */
+    function fullMul(uint256 a, uint256 b)
+        external
+        pure
+        returns (uint256 high, uint256 low)
+    {
+        return Math.mul512(a, b);
     }
 }
 ```
@@ -118,385 +479,556 @@ contract Utils {
 
 ## SafeCast
 
-SafeCast 是一个用于 安全类型转换（type casting） 的工具库，保证从大整数向小整数类型转换时不会 silently truncate（静默截断）。
+**SafeCast** 确保类型转换安全，防止数据截断。
 
-**SafeCast 常用函数：**
-
-| 函数                             | 作用                                    |
-| ------------------------------ | ------------------------------------- |
-| `toUint248/240/.../8(uint256)` | 把 uint256 安全转换成更小的 uint 类型            |
-| `toInt128/64/32/... (int256)`  | 把 int256 转小 int                       |
-| `toUint256(int256)`            | 安全转换 int → uint（负数会 revert）           |
-| `toInt256(uint256)`            | 安全转换 uint → int（超过 int256 范围会 revert） |
-
-
-## Address
-
-Address 是 Solidity 开发中最常用的工具库之一，用来安全地处理地址（address）相关的所有操作。
-
-**Address 库提供的核心功能:**
-
-| 功能                          | 方法                                     | 简约解释                                    |
-| --------------------------- | -------------------------------------- | --------------------------------------- |
-| 判断一个地址是否为合约                 | `isContract(address)`                  | 判断地址是否有代码（合约地址返回 true，普通钱包返回 false）     |
-| 安全向地址发送 ETH                 | `sendValue(address payable, uint256)`  | 比 `transfer` 更安全，不受 2300 gas 限制，可防止发送失败 |
-| 安全调用合约（call / staticcall 等） | `functionCall`、`functionCallWithValue` | 安全封装 `call`，自动检查返回是否成功并处理错误原因           |
-| 异常处理（bubble revert reason）  | 内部辅助函数                                 | 调用失败时，把目标合约的 revert 信息原样向上抛出，便于调试       |
-
-
-
-## Pausable
-
-Pausable 是一个 可暂停合约的工具模块，允许你在合约中临时停用某些敏感操作，例如交易、转账或其他关键函数。
-
-这种机制通常用于：
-
-- 紧急情况（Emergency）处理：发现漏洞或异常行为时，可以暂停合约操作。
-- 安全控制：防止在升级或维护时发生不必要的操作。
-
-它本质上是一个 状态管理工具，提供了 paused 状态，以及对应的函数修饰符（modifier）。
-
-**Pausable 提供以下核心功能：**
-
-| 功能              | 说明                    |
-| --------------- | --------------------- |
-| `_pause()`      | 内部函数，将合约状态设置为“暂停”     |
-| `_unpause()`    | 内部函数，将合约状态恢复为“正常”     |
-| `paused()`      | 查看合约当前是否处于暂停状态        |
-| `whenNotPaused` | 修饰符，用于限定函数仅在合约未暂停时可调用 |
-| `whenPaused`    | 修饰符，用于限定函数仅在合约暂停时可调用  |
+### 常见转换场景
 
 :::code-group
 
-```solidity [继承 Pausable]
+```solidity [安全的类型转换]
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/Pausable.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-contract GameContract is Pausable {
-    uint256 public score;
+/**
+ * @dev 时间戳和区块高度处理
+ */
+contract TimestampManager {
+    using SafeCast for uint256;
 
-    // 设置分数，只有未暂停时可以调用
-    function setScore(uint256 _score) external whenNotPaused {
-        score = _score;
+    // 存储为 uint48（节省存储）
+    mapping(uint256 => uint48) public timestamps;
+
+    /**
+     * @dev 记录时间戳（安全转换）
+     */
+    function recordTimestamp(uint256 id) external {
+        // block.timestamp 是 uint256，安全转换为 uint48
+        timestamps[id] = block.timestamp.toUint48();
     }
 
-    // 紧急暂停合约
-    function pauseGame() external {
-        _pause();
+    /**
+     * @dev 计算时间差（扩展为 uint256）
+     */
+    function getTimeSince(uint256 id) external view returns (uint256) {
+        uint48 recordedTime = timestamps[id];
+        // uint48 自动转换为 uint256（安全）
+        return block.timestamp - uint256(recordedTime);
     }
 
-    // 恢复合约
-    function resumeGame() external {
-        _unpause();
-    }
-
-    // 只有暂停状态下可执行的操作
-    function emergencyReset() external whenPaused {
-        score = 0;
+    /**
+     * @dev 批量转换
+     */
+    function convertToUint8(uint256[] memory values)
+        external
+        pure
+        returns (uint8[] memory)
+    {
+        uint8[] memory result = new uint8[](values.length);
+        for (uint256 i = 0; i < values.length; i++) {
+            result[i] = values[i].toUint8(); // 超过 255 会 revert
+        }
+        return result;
     }
 }
 ```
 
-```solidity [Pausable 源码]
+```solidity [有符号和无符号转换]
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v5.3.0) (utils/Pausable.sol)
-
 pragma solidity ^0.8.20;
 
-import {Context} from "../utils/Context.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-/**
- * @dev 可暂停合约模块，允许子合约实现紧急停止（Emergency Stop）机制。
- * 可以由授权账户触发暂停或恢复。
- *
- * 通过继承使用该模块。会提供两个函数修饰符：
- * - `whenNotPaused`：函数只能在合约未暂停时执行
- * - `whenPaused`：函数只能在合约暂停时执行
- *
- * 注意：仅继承该模块不会自动暂停合约，必须在函数上使用这些修饰符。
- */
-abstract contract Pausable is Context {
-    // 合约是否处于暂停状态
-    bool private _paused;
+contract SignedMath {
+    using SafeCast for uint256;
+    using SafeCast for int256;
 
     /**
-     * @dev 当合约被暂停时触发，记录触发暂停的账户
+     * @dev 价格变动计算（可能为负）
      */
-    event Paused(address account);
-
-    /**
-     * @dev 当合约恢复运行时触发，记录恢复的账户
-     */
-    event Unpaused(address account);
-
-    /**
-     * @dev 合约操作失败，原因：合约处于暂停状态
-     */
-    error EnforcedPause();
-
-    /**
-     * @dev 合约操作失败，原因：合约未处于暂停状态
-     */
-    error ExpectedPause();
-
-    /**
-     * @dev 修饰符：函数仅在合约未暂停时可调用
-     *
-     * 要求：
-     * - 合约必须未暂停
-     */
-    modifier whenNotPaused() {
-        _requireNotPaused();
-        _;
+    function calculatePriceChange(uint256 oldPrice, uint256 newPrice)
+        external
+        pure
+        returns (int256)
+    {
+        // 安全转换为 int256 进行计算
+        int256 change = newPrice.toInt256() - oldPrice.toInt256();
+        return change;
     }
 
     /**
-     * @dev 修饰符：函数仅在合约暂停时可调用
-     *
-     * 要求：
-     * - 合约必须处于暂停状态
+     * @dev 应用价格变动（处理负值）
      */
-    modifier whenPaused() {
-        _requirePaused();
-        _;
-    }
-
-    /**
-     * @dev 返回合约当前是否暂停
-     */
-    function paused() public view virtual returns (bool) {
-        return _paused;
-    }
-
-    /**
-     * @dev 如果合约处于暂停状态则抛出异常
-     */
-    function _requireNotPaused() internal view virtual {
-        if (paused()) {
-            revert EnforcedPause();
+    function applyPriceChange(uint256 basePrice, int256 change)
+        external
+        pure
+        returns (uint256)
+    {
+        if (change >= 0) {
+            return basePrice + change.toUint256();
+        } else {
+            uint256 decrease = (-change).toUint256();
+            require(basePrice >= decrease, "Price cannot be negative");
+            return basePrice - decrease;
         }
-    }
-
-    /**
-     * @dev 如果合约未处于暂停状态则抛出异常
-     */
-    function _requirePaused() internal view virtual {
-        if (!paused()) {
-            revert ExpectedPause();
-        }
-    }
-
-    /**
-     * @dev 内部函数：触发合约暂停状态
-     *
-     * 要求：
-     * - 合约必须未暂停
-     *
-     * 触发 Paused 事件
-     */
-    function _pause() internal virtual whenNotPaused {
-        _paused = true;
-        emit Paused(_msgSender());
-    }
-
-    /**
-     * @dev 内部函数：取消合约暂停，恢复正常状态
-     *
-     * 要求：
-     * - 合约必须处于暂停状态
-     *
-     * 触发 Unpaused 事件
-     */
-    function _unpause() internal virtual whenPaused {
-        _paused = false;
-        emit Unpaused(_msgSender());
     }
 }
 ```
 
 :::
 
-## ReentrancyGuard
+## Arrays
 
-> [!DANGER] 什么是重入攻击
-> 重入攻击指的是攻击者在合约调用外部合约（比如 call 或 transfer）时，在外部合约回调中再次调用原合约，导致合约状态不一致，从而重复提取资产。
-> ```solidity
->function withdraw(uint256 amount) public {
->    require(balances[msg.sender] >= amount);
->    (bool success,) = msg.sender.call{value: amount}(""); // 外部调用
->    require(success);
->    balances[msg.sender] -= amount; // 状态修改在后面，容易被重入
->}
->```
-
-ReentrancyGuard 提供了一个状态锁，确保同一个函数在执行时不能被再次调用，从而防止重入攻击。
-
-**核心机制:**
-
-- 合约有一个 _status 状态：`NOT_ENTERED = 1` 和 `ENTERED = 2`
-- 使用 `nonReentrant` 修饰符：调用函数时先检查 _status 是否为 `ENTERED`，如果是，则 revert; 函数执行完毕后重置 _status。
+**Arrays** 库提供数组操作工具。
 
 :::code-group
 
-```solidity [继承 ReentrancyGuard]
+```solidity [数组工具函数]
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Arrays} from "@openzeppelin/contracts/utils/Arrays.sol";
 
 /**
- * @title SimpleBank
- * @dev 一个简单的银行合约，用户可以存款和取款
- * 演示 ReentrancyGuard 的使用，防止重入攻击
+ * @dev 投票快照系统
  */
-contract SimpleBank is ReentrancyGuard {
-    mapping(address => uint256) private balances;
+contract VotingSnapshot {
+    using Arrays for uint256[];
 
-    // 存款
-    function deposit() external payable {
-        require(msg.value > 0, "Must send ETH");
-        balances[msg.sender] += msg.value;
+    // 区块号 => 投票权重
+    uint256[] public snapshotBlocks;
+    mapping(uint256 => uint256) public votingPower;
+
+    /**
+     * @dev 记录快照
+     */
+    function takeSnapshot() external {
+        snapshotBlocks.push(block.number);
+        votingPower[block.number] = msg.sender.balance; // 示例
     }
 
-    // 取款，使用 nonReentrant 防止重入攻击
-    function withdraw(uint256 amount) external nonReentrant {
+    /**
+     * @dev 查找最近的快照（二分查找）
+     */
+    function findNearestSnapshot(uint256 blockNumber)
+        external
+        view
+        returns (uint256)
+    {
+        // upperLookup: 找到第一个 >= blockNumber 的位置
+        uint256 index = snapshotBlocks.upperLookup(blockNumber);
+
+        if (index == 0) {
+            return 0; // 没有快照
+        }
+
+        return snapshotBlocks[index - 1];
+    }
+
+    /**
+     * @dev 获取某个区块的投票权（基于快照）
+     */
+    function getVotingPowerAt(uint256 blockNumber)
+        external
+        view
+        returns (uint256)
+    {
+        uint256 snapshotBlock = this.findNearestSnapshot(blockNumber);
+        return votingPower[snapshotBlock];
+    }
+}
+```
+
+:::
+
+## 数据结构
+
+### EnumerableSet
+
+**EnumerableSet** 提供可迭代的 Set 数据结构。
+
+:::code-group
+
+```solidity [EnumerableSet 使用]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
+/**
+ * @dev 白名单管理
+ */
+contract WhitelistManager {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    EnumerableSet.AddressSet private whitelist;
+
+    /**
+     * @dev 添加地址到白名单
+     */
+    function addToWhitelist(address account) external {
+        require(whitelist.add(account), "Already whitelisted");
+    }
+
+    /**
+     * @dev 移除白名单地址
+     */
+    function removeFromWhitelist(address account) external {
+        require(whitelist.remove(account), "Not whitelisted");
+    }
+
+    /**
+     * @dev 检查是否在白名单
+     */
+    function isWhitelisted(address account) external view returns (bool) {
+        return whitelist.contains(account);
+    }
+
+    /**
+     * @dev 获取白名单大小
+     */
+    function whitelistLength() external view returns (uint256) {
+        return whitelist.length();
+    }
+
+    /**
+     * @dev 获取指定索引的地址
+     */
+    function whitelistAt(uint256 index) external view returns (address) {
+        return whitelist.at(index);
+    }
+
+    /**
+     * @dev 获取所有白名单地址（Gas 密集！）
+     */
+    function getAllWhitelisted() external view returns (address[] memory) {
+        return whitelist.values();
+    }
+}
+```
+
+```solidity [多类型 Set]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
+contract MultiTypeSet {
+    using EnumerableSet for EnumerableSet.UintSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
+    // Token ID 集合
+    EnumerableSet.UintSet private ownedTokens;
+
+    // 权限角色集合
+    EnumerableSet.Bytes32Set private roles;
+
+    /**
+     * @dev 添加 Token
+     */
+    function addToken(uint256 tokenId) external {
+        ownedTokens.add(tokenId);
+    }
+
+    /**
+     * @dev 批量添加
+     */
+    function addTokens(uint256[] memory tokenIds) external {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            ownedTokens.add(tokenIds[i]);
+        }
+    }
+
+    /**
+     * @dev 获取所有 Token
+     */
+    function getOwnedTokens() external view returns (uint256[] memory) {
+        return ownedTokens.values();
+    }
+}
+```
+
+:::
+
+### EnumerableMap
+
+**EnumerableMap** 提供可迭代的 Map 数据结构。
+
+:::code-group
+
+```solidity [EnumerableMap 使用]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+
+/**
+ * @dev 用户积分系统
+ */
+contract PointsSystem {
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
+
+    EnumerableMap.AddressToUintMap private userPoints;
+
+    /**
+     * @dev 设置用户积分
+     */
+    function setPoints(address user, uint256 points) external {
+        userPoints.set(user, points);
+    }
+
+    /**
+     * @dev 获取用户积分
+     */
+    function getPoints(address user) external view returns (uint256) {
+        return userPoints.get(user);
+    }
+
+    /**
+     * @dev 尝试获取积分（不会 revert）
+     */
+    function tryGetPoints(address user)
+        external
+        view
+        returns (bool exists, uint256 points)
+    {
+        return userPoints.tryGet(user);
+    }
+
+    /**
+     * @dev 移除用户
+     */
+    function removeUser(address user) external {
+        userPoints.remove(user);
+    }
+
+    /**
+     * @dev 获取用户数量
+     */
+    function userCount() external view returns (uint256) {
+        return userPoints.length();
+    }
+
+    /**
+     * @dev 获取第 N 个用户
+     */
+    function getUserAt(uint256 index)
+        external
+        view
+        returns (address user, uint256 points)
+    {
+        return userPoints.at(index);
+    }
+
+    /**
+     * @dev 获取前 N 名用户
+     */
+    function getTopUsers(uint256 n)
+        external
+        view
+        returns (address[] memory users, uint256[] memory points)
+    {
+        uint256 length = userPoints.length();
+        uint256 count = n > length ? length : n;
+
+        users = new address[](count);
+        points = new uint256[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            (users[i], points[i]) = userPoints.at(i);
+        }
+    }
+}
+```
+
+:::
+
+## Counters
+
+**Counters** 提供安全的递增/递减计数器（已废弃，建议直接使用 `++` / `--`）。
+
+:::code-group
+
+```solidity [现代写法（推荐）]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/**
+ * @dev Solidity 0.8+ 内置溢出检查
+ */
+contract ModernCounter {
+    uint256 private _tokenIdCounter;
+
+    /**
+     * @dev 生成新的 Token ID
+     */
+    function mint() external returns (uint256) {
+        uint256 tokenId = _tokenIdCounter;
+        _tokenIdCounter++; // 安全，内置溢出检查
+        return tokenId;
+    }
+
+    /**
+     * @dev 当前计数
+     */
+    function currentCount() external view returns (uint256) {
+        return _tokenIdCounter;
+    }
+}
+```
+
+:::
+
+## Multicall
+
+**Multicall** 允许在单个交易中执行多个函数调用，节省 Gas。
+
+:::code-group
+
+```solidity [Multicall 实现]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
+
+/**
+ * @dev 支持批量操作的代币合约
+ */
+contract BatchToken is Multicall {
+    mapping(address => uint256) public balances;
+
+    /**
+     * @dev 转账
+     */
+    function transfer(address to, uint256 amount) external {
         require(balances[msg.sender] >= amount, "Insufficient balance");
-
-        // 先修改状态
         balances[msg.sender] -= amount;
-
-        // 再转账，防止重入攻击
-        (bool success, ) = msg.sender.call{value: amount}("");
-        require(success, "Transfer failed");
+        balances[to] += amount;
     }
 
-    // 查询余额
-    function getBalance(address user) external view returns (uint256) {
-        return balances[user];
+    /**
+     * @dev 授权
+     */
+    function approve(address spender, uint256 amount) external {
+        // 授权逻辑
     }
+
+    /**
+     * @dev 使用示例（前端调用）：
+     *
+     * const calls = [
+     *   contract.interface.encodeFunctionData("transfer", [addr1, 100]),
+     *   contract.interface.encodeFunctionData("transfer", [addr2, 200]),
+     *   contract.interface.encodeFunctionData("approve", [spender, 1000])
+     * ];
+     *
+     * await contract.multicall(calls); // 一次交易完成所有操作
+     */
 }
 ```
 
-```solidity [ReentrancyGuard 源码]
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v5.5.0) (utils/ReentrancyGuard.sol)
-
-pragma solidity ^0.8.20;
-
-import {StorageSlot} from "./StorageSlot.sol";
-
-/**
- * @dev 可防止重入攻击的合约模块。
- *
- * 继承自 `ReentrancyGuard` 后，会提供 `nonReentrant` 修饰符，
- * 可以用于函数，确保函数在调用期间不会被嵌套（重入）调用。
- *
- * 注意：
- * - 因为只有一个重入保护，如果一个函数标记为 `nonReentrant`，不能直接调用另一个
- *   `nonReentrant` 函数。可通过将内部逻辑函数设为 `private`，再加外部 `nonReentrant` 
- *   入口函数解决。
- *
- * 提示：
- * - 如果链支持 EIP-1153（临时存储），建议使用 `ReentrancyGuardTransient`。
- *
- * 重要：
- * - 该基于存储的重入保护在 v6.0 中将被废弃，由 `ReentrancyGuardTransient` 替代。
- *
- * @custom:stateless
- */
-abstract contract ReentrancyGuard {
-    using StorageSlot for bytes32;
-
-    // 存储槽常量，用于存储重入状态
-    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ReentrancyGuard")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant REENTRANCY_GUARD_STORAGE =
-        0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00;
-
-    /**
-     * 布尔型比 uint256 或完整字更贵，因为每次写入都需要先读取 SLOAD，
-     * 替换位后再写回，目的是防止升级合约出现指针混淆。
-     * 这里使用 uint256 更节省 gas。
-     */
-
-    // 非进入状态
-    uint256 private constant NOT_ENTERED = 1;
-    // 已进入状态
-    uint256 private constant ENTERED = 2;
-
-    /**
-     * @dev 重入调用错误
-     */
-    error ReentrancyGuardReentrantCall();
-
-    constructor() {
-        // 部署时初始化为未进入状态
-        _reentrancyGuardStorageSlot().getUint256Slot().value = NOT_ENTERED;
-    }
-
-    /**
-     * @dev 修饰符：防止函数被重入调用
-     *
-     * 注意：`nonReentrant` 函数不能调用另一个 `nonReentrant` 函数
-     */
-    modifier nonReentrant() {
-        _nonReentrantBefore();
-        _;
-        _nonReentrantAfter();
-    }
-
-    /**
-     * @dev view 版本的重入保护。阻止 view 函数在调用时读取到不一致状态
-     *
-     * 注意：仅适用于 view 函数，不修改重入状态
-     */
-    modifier nonReentrantView() {
-        _nonReentrantBeforeView();
-        _;
-    }
-
-    /**
-     * @dev 内部函数，检查是否重入，仅限 view 使用
-     */
-    function _nonReentrantBeforeView() private view {
-        if (_reentrancyGuardEntered()) {
-            revert ReentrancyGuardReentrantCall();
-        }
-    }
-
-    /**
-     * @dev 内部函数，重入前检查并标记状态为 ENTERED
-     */
-    function _nonReentrantBefore() private {
-        // 首次调用 nonReentrant 时，状态为 NOT_ENTERED
-        _nonReentrantBeforeView();
-
-        // 标记为已进入，后续重入调用将失败
-        _reentrancyGuardStorageSlot().getUint256Slot().value = ENTERED;
-    }
-
-    /**
-     * @dev 内部函数，重入调用后恢复状态为 NOT_ENTERED
-     */
-    function _nonReentrantAfter() private {
-        // 将状态恢复为 NOT_ENTERED，可以触发 gas refund
-        _reentrancyGuardStorageSlot().getUint256Slot().value = NOT_ENTERED;
-    }
-
-    /**
-     * @dev 返回当前是否处于 "entered" 状态
-     */
-    function _reentrancyGuardEntered() internal view returns (bool) {
-        return _reentrancyGuardStorageSlot().getUint256Slot().value == ENTERED;
-    }
-
-    /**
-     * @dev 返回重入保护存储槽
-     */
-    function _reentrancyGuardStorageSlot() internal pure virtual returns (bytes32) {
-        return REENTRANCY_GUARD_STORAGE;
-    }
-}
-```
 :::
+
+## 最佳实践
+
+### 1. 选择合适的工具
+
+```solidity
+// ❌ 手动实现字符串转换
+function uintToString(uint256 value) public pure returns (string memory) {
+    // 100 行代码...
+}
+
+// ✅ 使用 Strings 库
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+
+function uintToString(uint256 value) public pure returns (string memory) {
+    return Strings.toString(value);
+}
+```
+
+### 2. 防止溢出
+
+```solidity
+// ✅ Solidity 0.8+ 自动检查
+uint256 a = type(uint256).max;
+// a + 1; // 会 revert
+
+// ✅ 使用 Math.tryAdd 不 revert
+(bool success, uint256 result) = Math.tryAdd(a, 1);
+if (!success) {
+    // 处理溢出
+}
+
+// ✅ 使用饱和运算
+uint256 safe = Math.saturatingAdd(a, 1); // 返回 type(uint256).max
+```
+
+### 3. Gas 优化
+
+```solidity
+// ❌ 遍历数组查找
+function contains(uint256[] memory arr, uint256 value) public pure returns (bool) {
+    for (uint256 i = 0; i < arr.length; i++) {
+        if (arr[i] == value) return true;
+    }
+    return false;
+} // O(n)
+
+// ✅ 使用 EnumerableSet
+EnumerableSet.UintSet private values;
+
+function contains(uint256 value) public view returns (bool) {
+    return values.contains(value);
+} // O(1)
+```
+
+### 4. 类型安全
+
+```solidity
+// ❌ 不安全的转换
+uint256 bigNumber = 1000;
+uint8 smallNumber = uint8(bigNumber); // 截断为 232，无警告！
+
+// ✅ 使用 SafeCast
+uint8 smallNumber = SafeCast.toUint8(bigNumber); // revert
+```
+
+## 常见问题 FAQ
+
+### Q1: 何时使用 Math.mulDiv vs 直接乘除？
+
+**A:**
+```solidity
+// 直接计算可能溢出
+uint256 result = (a * b) / c; // a * b 可能 > uint256.max
+
+// mulDiv 保证不溢出
+uint256 result = Math.mulDiv(a, b, c); // 使用 512 位中间值
+```
+
+### Q2: EnumerableSet 和普通 mapping 如何选择？
+
+**A:**
+
+| 需求          | 使用             | 原因                |
+| ----------- | -------------- | ----------------- |
+| 仅需检查是否存在    | `mapping`      | 更便宜（O(1)）         |
+| 需要遍历所有元素    | `EnumerableSet` | 支持迭代              |
+| 需要获取集合大小    | `EnumerableSet` | 内置 `length()`     |
+| 需要批量返回所有元素  | `EnumerableSet` | 内置 `values()`     |
+| 只在链下查看      | `mapping`      | 可通过事件+链下索引实现     |
+
+### Q3: 如何选择字符串编码方式？
+
+```solidity
+// UTF-8 字符串（普通）
+string memory text = "Hello";
+
+// Base64 编码（NFT metadata）
+string memory base64 = Base64.encode(bytes(text));
+
+// JSON 转义（特殊字符）
+string memory json = Strings.escapeJSON('He said "Hi"');
+```

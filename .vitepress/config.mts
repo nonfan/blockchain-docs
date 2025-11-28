@@ -3,6 +3,7 @@ import {fileURLToPath, URL} from 'node:url'
 import {getSidebar} from "./sidebar";
 import { transformerTwoslash, defaultHoverInfoProcessor } from '@shikijs/vitepress-twoslash'
 import KeywordTipPlugin from './plugins/keywordTipPlugin'
+import taskLists from 'markdown-it-task-lists'
 
 // 根据环境决定 base 路径
 const base = "/blockchain-docs"
@@ -62,6 +63,7 @@ export default defineConfig({
   markdown: {
     config: (md) => {
       // 注册关键字替换插件
+      md.use(taskLists, { label: true /* 在 <li> 中包 label，便于点击 */ })
       md.use(KeywordTipPlugin, {
         keywords: {
           useAccount: { file: 'useAccount.txt', lang: 'tsx' },

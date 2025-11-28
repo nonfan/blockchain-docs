@@ -1,24 +1,89 @@
-# Token 系列
+# Token
 
-OpenZeppelin 里 Token 系列合约，主要分为 ERC 标准代币、NFT、以及多代币。
+> 代币标准：ERC20、ERC721、ERC1155 完全指南
 
-## ERC20
+> [!IMPORTANT] 本节重点
+> 1. ERC20、ERC721、ERC1155 三大标准的区别和使用场景？
+> 2. 如何使用 OpenZeppelin 快速开发生产级代币合约？
+> 3. 代币扩展（Burnable、Pausable、Snapshot、Permit、Votes）如何选择？
+> 4. NFT metadata 如何设计和存储？
+> 5. 代币安全最佳实践有哪些？
 
-**ERC 标准代币（ERC20 系列）:**
+## 代币标准概览
 
-| 合约 / 功能         | 说明                             | 常用方法                                            |
-| --------------- | ------------------------------ | ----------------------------------------------- |
-| `ERC20`         | 标准可替代代币                        | `balanceOf`、`transfer`、`approve`、`transferFrom` |
-| `ERC20Burnable` | 可销毁代币                          | `burn`、`burnFrom`                               |
-| `ERC20Capped`   | 有总量上限的 ERC20                   | 在 `mint` 时自动检查总量                                |
-| `ERC20Pausable` | 可暂停转账                          | `pause`、`unpause`，转账受阻时 revert                  |
-| `ERC20Snapshot` | 可做快照                           | `snapshot`、`balanceOfAt`、`totalSupplyAt`        |
-| `ERC20Permit`   | EIP-2612 支持，允许 gasless approve | `permit`（通过签名授权）                                |
+OpenZeppelin 提供了完整的代币标准实现，覆盖 Web3 应用的所有需求：
 
+```mermaid
+graph TB
+    A[代币标准] --> B[ERC20]
+    A --> C[ERC721]
+    A --> D[ERC1155]
+
+    B --> B1[同质化代币]
+    B --> B2[DeFi/支付/治理]
+
+    C --> C1[非同质化代币]
+    C --> C2[NFT/艺术品/游戏资产]
+
+    D --> D1[多代币标准]
+    D --> D2[游戏道具/半同质化]
+
+    style B fill:#90EE90
+    style C fill:#87CEEB
+    style D fill:#FFD700
+```
+
+### 三大标准对比
+
+| 特性             | ERC20                | ERC721           | ERC1155              |
+| -------------- | -------------------- | ---------------- | -------------------- |
+| **类型**         | 同质化代币（Fungible）      | 非同质化代币（NFT）      | 多代币（Multi-Token）     |
+| **可分割性**       | ✅ 可分割（有小数位）          | ❌ 不可分割           | ✅ 每个 ID 可配置           |
+| **唯一性**        | ❌ 所有代币相同             | ✅ 每个 Token ID 唯一 | ✅ 每个 ID 独立            |
+| **批量操作**       | ❌ 不支持原生批量            | ❌ 不支持原生批量        | ✅ 原生支持批量转账           |
+| **Gas 效率**     | 中等                   | 高（单个转账）          | ✅ 最高（批量优化）           |
+| **适用场景**       | 货币、积分、治理代币           | 艺术品、收藏品、域名       | 游戏道具、票券、半同质化资产       |
+| **存储结构**       | `mapping(address => uint)` | `mapping(uint => address)` | `mapping(uint => mapping(address => uint))` |
+| **典型应用**       | USDT、UNI、AAVE       | CryptoPunks、BAYC | Enjin、Decentraland  |
+
+## ERC20 详解
+
+**ERC20** 是最广泛使用的代币标准，用于创建同质化代币（Fungible Token）。
+
+### 核心功能
+
+```mermaid
+graph LR
+    A[用户 A] -->|1. approve| B[Spender]
+    A -->|2. balance: 1000| C[ERC20 合约]
+    B -->|3. transferFrom| C
+    C -->|4. 扣减 A: -100| A
+    C -->|5. 增加 B: +100| D[用户 B]
+
+    style C fill:#87CEEB
+    style A fill:#FFB6C6
+    style D fill:#90EE90
+```
+
+### ERC20 扩展对比
+
+| 扩展                    | 功能                       | 使用场景                | Gas 成本    |
+| --------------------- | ------------------------ | ------------------- | --------- |
+| **ERC20**             | 标准代币                     | 所有 ERC20 项目          | 基准        |
+| **ERC20Burnable**     | 可销毁                      | 通缩代币、销毁证明           | +2k       |
+| **ERC20Capped**       | 总量上限                     | 固定供应量代币             | +3k       |
+| **ERC20Pausable**     | 可暂停转账                    | 紧急情况控制              | +5k       |
+| **ERC20Snapshot**     | 快照功能                     | 空投、分红、治理投票          | +20k      |
+| **ERC20Permit**       | 无 Gas 授权（签名授权）           | Gasless 交易、DeFi 优化   | +10k      |
+| **ERC20Votes**        | 投票权重                     | DAO 治理              | +15k      |
+| **ERC20FlashMint**    | 闪电贷                      | DeFi 套利、清算          | +8k       |
+| **ERC20Wrapper**      | 包装代币                     | WETH、包装版权益代币        | +12k      |
+
+### 完整实现示例
 
 :::code-group
 
-```solidity [继承 ERC20]
+```solidity [标准 ERC20 代币]
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
@@ -27,36 +92,245 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title MyToken
- * @dev 简单 ERC20 示例，带铸币权限控制
+ * @dev 标准 ERC20 代币示例
  */
 contract MyToken is ERC20, Ownable {
-    
-    // 构造函数：设置代币名和符号，并初始铸币
-    constructor() ERC20("MyToken", "MTK") {
-        // 初始发行 1000 个代币给合约部署者
-        _mint(msg.sender, 1000 * 10 ** decimals());
+    // 最大供应量
+    uint256 public constant MAX_SUPPLY = 1_000_000_000 * 10**18;
+
+    event Minted(address indexed to, uint256 amount);
+    event Burned(address indexed from, uint256 amount);
+
+    constructor(address initialOwner) ERC20("MyToken", "MTK") Ownable(initialOwner) {
+        // 初始铸造 10% 给部署者
+        _mint(initialOwner, MAX_SUPPLY / 10);
     }
 
     /**
-     * @dev 只有合约拥有者可以铸币
-     * @param to 接收铸币的地址
-     * @param amount 铸币数量
+     * @dev 铸币（仅 owner）
      */
     function mint(address to, uint256 amount) external onlyOwner {
+        require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
         _mint(to, amount);
+        emit Minted(to, amount);
     }
 
     /**
-     * @dev 允许销毁自己持有的代币
-     * @param amount 销毁数量
+     * @dev 销毁代币（任何人可销毁自己的代币）
      */
     function burn(uint256 amount) external {
         _burn(msg.sender, amount);
+        emit Burned(msg.sender, amount);
+    }
+
+    /**
+     * @dev 重写小数位（可选，默认 18）
+     */
+    function decimals() public pure override returns (uint8) {
+        return 18;
     }
 }
 ```
 
-```solidity [ERC20 源码]
+```solidity [完整功能 DeFi 代币]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {ERC20Pausable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
+
+/**
+ * @title DeFiToken
+ * @dev 完整功能的 DeFi 治理代币
+ *
+ * 功能：
+ * - ✅ 可销毁
+ * - ✅ 可暂停
+ * - ✅ 支持 Permit（Gasless 授权）
+ * - ✅ 支持投票
+ */
+contract DeFiToken is
+    ERC20,
+    ERC20Burnable,
+    ERC20Pausable,
+    ERC20Permit,
+    ERC20Votes,
+    Ownable
+{
+    uint256 public constant MAX_SUPPLY = 1_000_000_000 * 10**18;
+
+    constructor(address initialOwner)
+        ERC20("DeFi Token", "DFT")
+        ERC20Permit("DeFi Token")
+        Ownable(initialOwner)
+    {
+        // 初始铸造 50% 给部署者
+        _mint(initialOwner, MAX_SUPPLY / 2);
+    }
+
+    /**
+     * @dev 铸币（仅 owner）
+     */
+    function mint(address to, uint256 amount) external onlyOwner {
+        require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
+        _mint(to, amount);
+    }
+
+    /**
+     * @dev 暂停转账（仅 owner）
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @dev 恢复转账（仅 owner）
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    // ===================== 重写函数（解决多继承冲突）=====================
+
+    /**
+     * @dev 重写 _update（ERC20Pausable + ERC20Votes）
+     */
+    function _update(address from, address to, uint256 value)
+        internal
+        override(ERC20, ERC20Pausable, ERC20Votes)
+    {
+        super._update(from, to, value);
+    }
+
+    /**
+     * @dev 重写 nonces（ERC20Permit + Nonces）
+     */
+    function nonces(address owner)
+        public
+        view
+        override(ERC20Permit, Nonces)
+        returns (uint256)
+    {
+        return super.nonces(owner);
+    }
+}
+```
+
+```solidity [代币快照（空投/分红）]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Snapshot} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title SnapshotToken
+ * @dev 支持快照的代币（用于空投、分红、投票）
+ */
+contract SnapshotToken is ERC20, ERC20Snapshot, Ownable {
+    uint256 public currentSnapshotId;
+
+    event SnapshotCreated(uint256 id, uint256 timestamp);
+
+    constructor(address initialOwner)
+        ERC20("Snapshot Token", "SNAP")
+        Ownable(initialOwner)
+    {
+        _mint(initialOwner, 1_000_000 * 10**18);
+    }
+
+    /**
+     * @dev 创建快照（记录当前所有余额）
+     */
+    function snapshot() external onlyOwner returns (uint256) {
+        currentSnapshotId = _snapshot();
+        emit SnapshotCreated(currentSnapshotId, block.timestamp);
+        return currentSnapshotId;
+    }
+
+    /**
+     * @dev 查询某地址在某快照时的余额
+     */
+    function balanceOfAt(address account, uint256 snapshotId)
+        public
+        view
+        override
+        returns (uint256)
+    {
+        return super.balanceOfAt(account, snapshotId);
+    }
+
+    /**
+     * @dev 查询某快照时的总供应量
+     */
+    function totalSupplyAt(uint256 snapshotId)
+        public
+        view
+        override
+        returns (uint256)
+    {
+        return super.totalSupplyAt(snapshotId);
+    }
+
+    /**
+     * @dev 重写 _update（解决继承冲突）
+     */
+    function _update(address from, address to, uint256 value)
+        internal
+        override(ERC20, ERC20Snapshot)
+    {
+        super._update(from, to, value);
+    }
+}
+```
+
+```solidity [ERC20 Permit 示例（Gasless 授权）]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+
+/**
+ * @title PermitToken
+ * @dev 支持 EIP-2612 Permit 的代币
+ *
+ * Permit 优势：
+ * - 用户无需两次交易（approve + transferFrom）
+ * - 通过链下签名完成授权
+ * - 节省 Gas
+ */
+contract PermitToken is ERC20, ERC20Permit {
+    constructor() ERC20("Permit Token", "PRMT") ERC20Permit("Permit Token") {
+        _mint(msg.sender, 1_000_000 * 10**18);
+    }
+
+    /**
+     * @dev Permit 使用示例（链下签名）
+     *
+     * 前端代码：
+     * const signature = await signer._signTypedData(domain, types, value);
+     * const { v, r, s } = ethers.utils.splitSignature(signature);
+     *
+     * await token.permit(owner, spender, amount, deadline, v, r, s);
+     * await spender.transferFrom(owner, recipient, amount); // 无需事先 approve
+     */
+}
+```
+
+:::
+
+### ERC20 核心源码解析
+
+:::code-group
+
+```solidity [ERC20 核心实现]
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
@@ -67,980 +341,1171 @@ import {IERC20Errors} from "../../interfaces/draft-IERC6093.sol";
 
 /**
  * @dev ERC20 标准实现
- * 1. 不自带铸币机制，需在子合约里调用 _mint 实现
- * 2. 默认 decimals 为 18
- * 3. 函数失败会 revert，不返回 false
+ *
+ * 核心设计：
+ * - 使用 mapping 存储余额和授权
+ * - _update 函数统一处理 mint、burn、transfer
+ * - 默认 18 位小数（与 ETH 一致）
  */
 abstract contract ERC20 is Context, IERC20, IERC20Metadata, IERC20Errors {
+    // ===================== 状态变量 =====================
 
-    mapping(address => uint256) private _balances; // 账户余额
+    mapping(address => uint256) private _balances;         // 余额
     mapping(address => mapping(address => uint256)) private _allowances; // 授权额度
-    uint256 private _totalSupply; // 总供应量
-    string private _name; // 代币名
-    string private _symbol; // 代币符号
+    uint256 private _totalSupply;                          // 总供应量
+    string private _name;                                  // 代币名
+    string private _symbol;                                // 代币符号
+
+    // ===================== 构造函数 =====================
 
     constructor(string memory name_, string memory symbol_) {
         _name = name_;
         _symbol = symbol_;
     }
 
-    // 代币名
+    // ===================== 查询函数 =====================
+
     function name() public view virtual returns (string memory) {
         return _name;
     }
 
-    // 代币符号
     function symbol() public view virtual returns (string memory) {
         return _symbol;
     }
 
-    // 小数位数，默认 18
     function decimals() public view virtual returns (uint8) {
-        return 18;
+        return 18; // 默认 18 位小数
     }
 
-    // 总供应量
     function totalSupply() public view virtual returns (uint256) {
         return _totalSupply;
     }
 
-    // 查询余额
     function balanceOf(address account) public view virtual returns (uint256) {
         return _balances[account];
     }
 
-    // 转账
+    // ===================== 转账函数 =====================
+
+    /**
+     * @dev 直接转账
+     */
     function transfer(address to, uint256 value) public virtual returns (bool) {
         _transfer(_msgSender(), to, value);
         return true;
     }
 
-    // 查询授权额度
-    function allowance(address owner, address spender) public view virtual returns (uint256) {
+    /**
+     * @dev 授权额度查询
+     */
+    function allowance(address owner, address spender)
+        public
+        view
+        virtual
+        returns (uint256)
+    {
         return _allowances[owner][spender];
     }
 
-    // 授权
+    /**
+     * @dev 授权
+     */
     function approve(address spender, uint256 value) public virtual returns (bool) {
         _approve(_msgSender(), spender, value);
         return true;
     }
 
-    // 授权转账
-    function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
-        _spendAllowance(from, _msgSender(), value); // 扣减额度
-        _transfer(from, to, value); // 执行转账
+    /**
+     * @dev 授权转账
+     */
+    function transferFrom(address from, address to, uint256 value)
+        public
+        virtual
+        returns (bool)
+    {
+        _spendAllowance(from, _msgSender(), value); // 扣减授权额度
+        _transfer(from, to, value);                  // 执行转账
         return true;
     }
 
-    // 内部转账
+    // ===================== 内部函数 =====================
+
+    /**
+     * @dev 内部转账
+     */
     function _transfer(address from, address to, uint256 value) internal {
         if (from == address(0)) revert ERC20InvalidSender(address(0));
         if (to == address(0)) revert ERC20InvalidReceiver(address(0));
         _update(from, to, value);
     }
 
-    // 核心更新逻辑：支持转账、铸币(_mint)、销毁(_burn)
+    /**
+     * @dev 核心更新逻辑（统一处理 mint、burn、transfer）
+     *
+     * 规则：
+     * - from = 0 → mint（总供应量增加）
+     * - to = 0 → burn（总供应量减少）
+     * - 其他 → transfer（总供应量不变）
+     */
     function _update(address from, address to, uint256 value) internal virtual {
-        if (from == address(0)) { // 铸币
+        if (from == address(0)) {
+            // Mint：增加总供应量
             _totalSupply += value;
-        } else { // 扣余额
+        } else {
+            // 扣减发送者余额
             uint256 fromBalance = _balances[from];
-            if (fromBalance < value) revert ERC20InsufficientBalance(from, fromBalance, value);
-            unchecked { _balances[from] = fromBalance - value; }
+            if (fromBalance < value) {
+                revert ERC20InsufficientBalance(from, fromBalance, value);
+            }
+            unchecked {
+                _balances[from] = fromBalance - value;
+            }
         }
 
-        if (to == address(0)) { // 销毁
-            unchecked { _totalSupply -= value; }
-        } else { // 增余额
-            unchecked { _balances[to] += value; }
+        if (to == address(0)) {
+            // Burn：减少总供应量
+            unchecked {
+                _totalSupply -= value;
+            }
+        } else {
+            // 增加接收者余额
+            unchecked {
+                _balances[to] += value;
+            }
         }
 
         emit Transfer(from, to, value);
     }
 
-    // 内部铸币
+    /**
+     * @dev 内部铸币
+     */
     function _mint(address account, uint256 value) internal {
         if (account == address(0)) revert ERC20InvalidReceiver(address(0));
         _update(address(0), account, value);
     }
 
-    // 内部销毁
+    /**
+     * @dev 内部销毁
+     */
     function _burn(address account, uint256 value) internal {
         if (account == address(0)) revert ERC20InvalidSender(address(0));
         _update(account, address(0), value);
     }
 
-    // 内部授权
+    /**
+     * @dev 内部授权
+     */
     function _approve(address owner, address spender, uint256 value) internal {
         _approve(owner, spender, value, true);
     }
 
-    // 可选择是否发 Approval 事件的内部授权
-    function _approve(address owner, address spender, uint256 value, bool emitEvent) internal virtual {
+    function _approve(
+        address owner,
+        address spender,
+        uint256 value,
+        bool emitEvent
+    ) internal virtual {
         if (owner == address(0)) revert ERC20InvalidApprover(address(0));
         if (spender == address(0)) revert ERC20InvalidSpender(address(0));
+
         _allowances[owner][spender] = value;
-        if (emitEvent) emit Approval(owner, spender, value);
+
+        if (emitEvent) {
+            emit Approval(owner, spender, value);
+        }
     }
 
-    // 扣减 allowance，transferFrom 调用
-    function _spendAllowance(address owner, address spender, uint256 value) internal virtual {
+    /**
+     * @dev 扣减授权额度（transferFrom 使用）
+     *
+     * 特殊处理：
+     * - 如果授权额度 = type(uint256).max（无限授权），不扣减
+     */
+    function _spendAllowance(address owner, address spender, uint256 value)
+        internal
+        virtual
+    {
         uint256 currentAllowance = allowance(owner, spender);
-        if (currentAllowance < type(uint256).max) {
-            if (currentAllowance < value) revert ERC20InsufficientAllowance(spender, currentAllowance, value);
-            unchecked { _approve(owner, spender, currentAllowance - value, false); }
+
+        if (currentAllowance != type(uint256).max) {
+            if (currentAllowance < value) {
+                revert ERC20InsufficientAllowance(spender, currentAllowance, value);
+            }
+            unchecked {
+                _approve(owner, spender, currentAllowance - value, false);
+            }
         }
     }
 }
 ```
+
 :::
 
-## ERC721
+### ERC20 最佳实践
 
-ERC721 是 不可分割、独一无二的代币标准，主要用来表示：NFT、游戏道具等等，且每一个 Token ID 独一无二。
+#### 1. 选择合适的扩展
 
-**ERC721 常用扩展：**
+```solidity
+// ❌ 过度设计：简单代币不需要所有扩展
+contract OverEngineered is
+    ERC20,
+    ERC20Burnable,
+    ERC20Pausable,
+    ERC20Snapshot,
+    ERC20Permit,
+    ERC20Votes,
+    ERC20FlashMint
+{
+    // Gas 成本太高！
+}
 
-| 扩展                   | 含义                              | 场景         |
-| -------------------- | ------------------------------- | ---------- |
-| `ERC721URIStorage` | 每个 tokenId 可以存储独立的 metadata URI | 常用于头像类 NFT |
-| `ERC721Enumerable` | 可以枚举所有 tokenId                  | 列表、分页 NFT  |
-| `ERC721Votes`      | NFT 用于治理投票                      | DAO 投票     |
-| `ERC721Burnable`   | 支持烧毁 NFT                        | 可销毁 NFT    |
-| `ERC721Pausable`   | 暂停转账功能                          | 安全控制       |
-| `ERC721Royalty`    | NFT 版税（支持 EIP-2981）             | 二级市场分成     |
+// ✅ 合理选择：根据需求选择扩展
+contract ReasonableToken is ERC20, ERC20Burnable, ERC20Permit {
+    // 基础代币 + 销毁 + Gasless 授权
+}
+```
+
+#### 2. 防止整数溢出
+
+```solidity
+// ✅ Solidity 0.8+ 自动检查溢出
+function mint(address to, uint256 amount) external onlyOwner {
+    require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds cap");
+    _mint(to, amount);
+}
+
+// ✅ 使用 unchecked 优化已知安全的操作
+function _transfer(address from, address to, uint256 amount) internal {
+    unchecked {
+        _balances[from] -= amount; // 前面已检查余额
+        _balances[to] += amount;   // 不会溢出
+    }
+}
+```
+
+#### 3. 小数位处理
+
+```solidity
+// ❌ 错误：直接使用数字
+uint256 amount = 100; // 这是 100 wei，不是 100 token
+
+// ✅ 正确：考虑小数位
+uint256 amount = 100 * 10**decimals(); // 100 token
+
+// ✅ 推荐：使用常量
+uint256 constant TOKEN_DECIMALS = 18;
+uint256 amount = 100 * 10**TOKEN_DECIMALS;
+```
+
+## ERC721 详解
+
+**ERC721** 是非同质化代币（NFT）标准，每个 Token ID 都是独一无二的。
+
+### 核心概念
+
+```mermaid
+graph TB
+    A[NFT 合约] --> B[Token ID: 1]
+    A --> C[Token ID: 2]
+    A --> D[Token ID: 3]
+
+    B --> E[所有者: Alice]
+    B --> F[metadata: ipfs://xxx1]
+
+    C --> G[所有者: Bob]
+    C --> H[metadata: ipfs://xxx2]
+
+    D --> I[所有者: Alice]
+    D --> J[metadata: ipfs://xxx3]
+
+    style A fill:#87CEEB
+    style B fill:#90EE90
+    style C fill:#FFD700
+    style D fill:#FFB6C6
+```
+
+### ERC721 扩展对比
+
+| 扩展                      | 功能                     | 使用场景              | Gas 成本    |
+| ----------------------- | ---------------------- | ----------------- | --------- |
+| **ERC721**              | 标准 NFT                | 所有 NFT 项目          | 基准        |
+| **ERC721URIStorage**    | 可变 Token URI           | 动态 metadata、艺术品   | +5k       |
+| **ERC721Enumerable**    | 可枚举所有 Token           | 市场列表、批量查询         | +30k      |
+| **ERC721Burnable**      | 可销毁                    | 消耗型 NFT           | +2k       |
+| **ERC721Pausable**      | 可暂停转账                  | 紧急情况控制            | +5k       |
+| **ERC721Royalty**       | 版税（EIP-2981）           | 二级市场分成            | +8k       |
+| **ERC721Votes**         | 投票权重                   | NFT DAO 治理        | +15k      |
+| **ERC721Consecutive**   | 批量铸造优化                 | 大规模空投             | -70%（批量） |
+
+### 完整实现示例
 
 :::code-group
-```solidity [继承 ERC721]
+
+```solidity [标准 NFT 合约]
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+/**
+ * @title MyNFT
+ * @dev 标准 NFT 示例
+ */
 contract MyNFT is ERC721, Ownable {
-    uint256 public nextTokenId = 1;
+    uint256 private _nextTokenId;
+    string private _baseTokenURI;
 
-    constructor() ERC721("MyNFT", "MNFT") Ownable(msg.sender) {}
+    uint256 public constant MAX_SUPPLY = 10000;
+    uint256 public constant MINT_PRICE = 0.05 ether;
 
-    function mint() external {
-        _safeMint(msg.sender, nextTokenId);
-        nextTokenId++;
+    event Minted(address indexed to, uint256 tokenId);
+
+    constructor(address initialOwner, string memory baseURI)
+        ERC721("MyNFT", "MNFT")
+        Ownable(initialOwner)
+    {
+        _baseTokenURI = baseURI;
+    }
+
+    /**
+     * @dev 公开铸造
+     */
+    function mint() external payable {
+        require(_nextTokenId < MAX_SUPPLY, "Max supply reached");
+        require(msg.value == MINT_PRICE, "Wrong price");
+
+        uint256 tokenId = _nextTokenId++;
+        _safeMint(msg.sender, tokenId);
+
+        emit Minted(msg.sender, tokenId);
+    }
+
+    /**
+     * @dev 批量铸造（仅 owner）
+     */
+    function mintBatch(address to, uint256 quantity) external onlyOwner {
+        require(_nextTokenId + quantity <= MAX_SUPPLY, "Exceeds max supply");
+
+        for (uint256 i = 0; i < quantity; i++) {
+            uint256 tokenId = _nextTokenId++;
+            _safeMint(to, tokenId);
+        }
+    }
+
+    /**
+     * @dev 返回 base URI
+     */
+    function _baseURI() internal view override returns (string memory) {
+        return _baseTokenURI;
+    }
+
+    /**
+     * @dev 设置 base URI（仅 owner）
+     */
+    function setBaseURI(string memory baseURI) external onlyOwner {
+        _baseTokenURI = baseURI;
+    }
+
+    /**
+     * @dev 提取销售收入（仅 owner）
+     */
+    function withdraw() external onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
+    /**
+     * @dev 查询当前已铸造数量
+     */
+    function totalMinted() external view returns (uint256) {
+        return _nextTokenId;
     }
 }
 ```
 
-
-```solidity [ERC721 源码]
+```solidity [完整功能 NFT（URI Storage + Enumerable）]
 // SPDX-License-Identifier: MIT
-// OpenZeppelin ERC721 (v5.5.0)
+pragma solidity ^0.8.20;
 
-pragma solidity ^0.8.24;
-
-import {IERC721} from "./IERC721.sol";
-import {IERC721Metadata} from "./extensions/IERC721Metadata.sol";
-import {ERC721Utils} from "./utils/ERC721Utils.sol";
-import {Context} from "../../utils/Context.sol";
-import {Strings} from "../../utils/Strings.sol";
-import {IERC165, ERC165} from "../../utils/introspection/ERC165.sol";
-import {IERC721Errors} from "../../interfaces/draft-IERC6093.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @dev ERC721 NFT 标准（含 Metadata），但不包含 Enumerable。
+ * @title AdvancedNFT
+ * @dev 高级 NFT：支持可变 URI + 可枚举
  */
-abstract contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Errors {
-    using Strings for uint256;
+contract AdvancedNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
+    uint256 private _nextTokenId;
 
-    // NFT 名称
-    string private _name;
-
-    // NFT 符号
-    string private _symbol;
-
-    // tokenId => 所有者地址
-    mapping(uint256 tokenId => address) private _owners;
-
-    // address => 持有 NFT 数量
-    mapping(address owner => uint256) private _balances;
-
-    // tokenId => 被授权的单个地址
-    mapping(uint256 tokenId => address) private _tokenApprovals;
-
-    // owner => operator => 是否授权全部 NFT
-    mapping(address owner => mapping(address operator => bool)) private _operatorApprovals;
-
+    constructor(address initialOwner)
+        ERC721("Advanced NFT", "ANFT")
+        Ownable(initialOwner)
+    {}
 
     /**
-     * @dev 构造函数，设置 name 和 symbol
+     * @dev 铸造并设置 URI
      */
-    constructor(string memory name_, string memory symbol_) {
-        _name = name_;
-        _symbol = symbol_;
+    function mintWithURI(address to, string memory uri) external onlyOwner {
+        uint256 tokenId = _nextTokenId++;
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, uri);
     }
-
-
-    /** ------------------------------------------
-     *  基础查询函数
-     *  ------------------------------------------
-     */
-
-    /// 判断是否支持某个接口（ERC165）
-    function supportsInterface(bytes4 interfaceId)
-        public view virtual override(ERC165, IERC165) returns (bool)
-    {
-        return
-            interfaceId == type(IERC721).interfaceId ||
-            interfaceId == type(IERC721Metadata).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
-
-    /// 查询某地址持有多少 NFT
-    function balanceOf(address owner) public view virtual returns (uint256) {
-        if (owner == address(0)) revert ERC721InvalidOwner(address(0));
-        return _balances[owner];
-    }
-
-    /// 查询 tokenId 的持有者
-    function ownerOf(uint256 tokenId) public view virtual returns (address) {
-        return _requireOwned(tokenId);
-    }
-
-    /// NFT 名称
-    function name() public view virtual returns (string memory) {
-        return _name;
-    }
-
-    /// NFT 符号
-    function symbol() public view virtual returns (string memory) {
-        return _symbol;
-    }
-
-    /// tokenURI（需要子类实现 _baseURI）
-    function tokenURI(uint256 tokenId) public view virtual returns (string memory) {
-        _requireOwned(tokenId);
-        string memory baseURI = _baseURI();
-        return bytes(baseURI).length > 0
-            ? string.concat(baseURI, tokenId.toString())
-            : "";
-    }
-
-    /// baseURI 可被子类重写
-    function _baseURI() internal view virtual returns (string memory) {
-        return "";
-    }
-
-
-    /** ------------------------------------------
-     *  授权相关
-     *  ------------------------------------------
-     */
-
-    /// 授权某地址可操作 tokenId
-    function approve(address to, uint256 tokenId) public virtual {
-        _approve(to, tokenId, _msgSender());
-    }
-
-    /// 查询 tokenId 的授权地址
-    function getApproved(uint256 tokenId) public view virtual returns (address) {
-        _requireOwned(tokenId);
-        return _getApproved(tokenId);
-    }
-
-    /// operator 获得 owner 所有 NFT 的操作权
-    function setApprovalForAll(address operator, bool approved) public virtual {
-        _setApprovalForAll(_msgSender(), operator, approved);
-    }
-
-    /// 查询 operator 是否拥有 owner 全部 NFT 的授权
-    function isApprovedForAll(address owner, address operator)
-        public view virtual returns (bool)
-    {
-        return _operatorApprovals[owner][operator];
-    }
-
-
-    /** ------------------------------------------
-     *  转账函数（对外接口）
-     *  ------------------------------------------
-     */
-
-    /// 普通转账
-    function transferFrom(address from, address to, uint256 tokenId) public virtual {
-        if (to == address(0)) revert ERC721InvalidReceiver(address(0));
-
-        // _update 内部检查是否被授权
-        address previousOwner = _update(to, tokenId, _msgSender());
-
-        // 确保 from 是真正的 owner
-        if (previousOwner != from) {
-            revert ERC721IncorrectOwner(from, tokenId, previousOwner);
-        }
-    }
-
-    /// 安全转账（若接收方是合约必须实现 onERC721Received）
-    function safeTransferFrom(address from, address to, uint256 tokenId) public {
-        safeTransferFrom(from, to, tokenId, "");
-    }
-
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data)
-        public virtual
-    {
-        transferFrom(from, to, tokenId);
-        ERC721Utils.checkOnERC721Received(_msgSender(), from, to, tokenId, data);
-    }
-
-
-    /** ------------------------------------------
-     *  核心内部逻辑（Mint / Burn / Transfer）
-     *  ------------------------------------------
-     */
-
-    /// 读取 owner（不 revert）
-    function _ownerOf(uint256 tokenId) internal view virtual returns (address) {
-        return _owners[tokenId];
-    }
-
-    function _getApproved(uint256 tokenId) internal view virtual returns (address) {
-        return _tokenApprovals[tokenId];
-    }
-
-    /// 核心授权检查：owner / operator / tokenApproval
-    function _isAuthorized(address owner, address spender, uint256 tokenId)
-        internal view virtual returns (bool)
-    {
-        return spender != address(0) &&
-            (spender == owner ||
-             isApprovedForAll(owner, spender) ||
-             _getApproved(tokenId) == spender);
-    }
-
-    /// 若无权限，抛出异常
-    function _checkAuthorized(address owner, address spender, uint256 tokenId)
-        internal view virtual
-    {
-        if (!_isAuthorized(owner, spender, tokenId)) {
-            if (owner == address(0)) revert ERC721NonexistentToken(tokenId);
-            revert ERC721InsufficientApproval(spender, tokenId);
-        }
-    }
-
-
-    /** ------------------------------------------
-     *  Mint / Burn / Transfer 核心更新函数
-     *  ------------------------------------------
-     */
 
     /**
-     * @dev 更新 NFT 所有者（同时负责 mint / burn / transfer）
-     *
-     * 参数：
-     * - to = 新 owner（0 = burn）
-     * - tokenId
-     * - auth != 0 时检查权限
-     *
-     * 返回：操作前的 owner
+     * @dev 更新 Token URI（仅 owner）
      */
-    function _update(address to, uint256 tokenId, address auth)
-        internal virtual returns (address)
+    function updateTokenURI(uint256 tokenId, string memory newURI)
+        external
+        onlyOwner
     {
-        address from = _ownerOf(tokenId);
-
-        // 权限检查（auth=0 时不检查）
-        if (auth != address(0)) _checkAuthorized(from, auth, tokenId);
-
-        // 如果 token 已存在，则减少旧 owner 的余额
-        if (from != address(0)) {
-            _approve(address(0), tokenId, address(0), false); // 清除授权
-            _balances[from] -= 1;
-        }
-
-        // 新 owner 非零则增加余额
-        if (to != address(0)) {
-            _balances[to] += 1;
-        }
-
-        // 写入新 owner
-        _owners[tokenId] = to;
-
-        emit Transfer(from, to, tokenId);
-
-        return from;
+        _setTokenURI(tokenId, newURI);
     }
 
-    /// mint
-    function _mint(address to, uint256 tokenId) internal {
-        if (to == address(0)) revert ERC721InvalidReceiver(address(0));
-
-        address prev = _update(to, tokenId, address(0));
-        if (prev != address(0)) revert ERC721InvalidSender(address(0));
-    }
-
-    /// safeMint
-    function _safeMint(address to, uint256 tokenId) internal {
-        _safeMint(to, tokenId, "");
-    }
-
-    function _safeMint(address to, uint256 tokenId, bytes memory data)
-        internal virtual
-    {
-        _mint(to, tokenId);
-        ERC721Utils.checkOnERC721Received(_msgSender(), address(0), to, tokenId, data);
-    }
-
-    /// burn
-    function _burn(uint256 tokenId) internal {
-        address prev = _update(address(0), tokenId, address(0));
-        if (prev == address(0)) revert ERC721NonexistentToken(tokenId);
-    }
-
-    /// 内部转账（无授权检查）
-    function _transfer(address from, address to, uint256 tokenId) internal {
-        if (to == address(0)) revert ERC721InvalidReceiver(address(0));
-
-        address prev = _update(to, tokenId, address(0));
-
-        if (prev == address(0)) revert ERC721NonexistentToken(tokenId);
-        if (prev != from) revert ERC721IncorrectOwner(from, tokenId, prev);
-    }
-
-
-    /** ------------------------------------------
-     *  内部授权函数
-     *  ------------------------------------------
+    /**
+     * @dev 获取某用户拥有的所有 Token ID
      */
+    function tokensOfOwner(address owner) external view returns (uint256[] memory) {
+        uint256 balance = balanceOf(owner);
+        uint256[] memory tokens = new uint256[](balance);
 
-    /// 授权 tokenId 给 to
-    function _approve(address to, uint256 tokenId, address auth) internal {
-        _approve(to, tokenId, auth, true);
-    }
-
-    function _approve(address to, uint256 tokenId, address auth, bool emitEvent)
-        internal virtual
-    {
-        if (emitEvent || auth != address(0)) {
-            address owner = _requireOwned(tokenId);
-
-            if (auth != address(0) &&
-                owner != auth &&
-                !isApprovedForAll(owner, auth))
-            {
-                revert ERC721InvalidApprover(auth);
-            }
-
-            if (emitEvent) emit Approval(owner, to, tokenId);
+        for (uint256 i = 0; i < balance; i++) {
+            tokens[i] = tokenOfOwnerByIndex(owner, i);
         }
 
-        _tokenApprovals[tokenId] = to;
+        return tokens;
     }
 
-    /// 授权 operator 操作 owner 所有 NFT
-    function _setApprovalForAll(address owner, address operator, bool approved)
-        internal virtual
-    {
-        if (operator == address(0)) revert ERC721InvalidOperator(operator);
+    // ===================== 重写函数（解决多继承冲突）=====================
 
-        _operatorApprovals[owner][operator] = approved;
-
-        emit ApprovalForAll(owner, operator, approved);
-    }
-
-    /// tokenId 必须存在，否则 revert
-    function _requireOwned(uint256 tokenId) internal view returns (address) {
-        address owner = _ownerOf(tokenId);
-        if (owner == address(0)) revert ERC721NonexistentToken(tokenId);
-        return owner;
-    }
-}
-```
-
-```solidity [ERC721URIStorage 源码]
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v5.5.0)
-
-pragma solidity ^0.8.24;
-
-import {ERC721} from "../ERC721.sol";
-import {IERC721Metadata} from "./IERC721Metadata.sol";
-import {IERC4906} from "../../../interfaces/IERC4906.sol";
-import {IERC165} from "../../../interfaces/IERC165.sol";
-
-/**
- * @dev 扩展版 ERC721，支持对每个 token 储存独立的 tokenURI。
- * 适用于每个 NFT 有不同 metadata 的场景。
- */
-abstract contract ERC721URIStorage is IERC4906, ERC721 {
-
-    // ERC-4906 的接口 ID（仅事件，无函数）
-    bytes4 private constant ERC4906_INTERFACE_ID = bytes4(0x49064906);
-
-    // tokenId => tokenURI 映射表
-    mapping(uint256 tokenId => string) private _tokenURIs;
-
-    /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC721, IERC165)
-        returns (bool)
-    {
-        // 支持 ERC4906 + 父类支持的接口
-        return interfaceId == ERC4906_INTERFACE_ID || super.supportsInterface(interfaceId);
-    }
-
-    /// @inheritdoc IERC721Metadata
     function tokenURI(uint256 tokenId)
         public
         view
-        virtual
-        override
+        override(ERC721, ERC721URIStorage)
         returns (string memory)
     {
-        // 确保 token 已存在
-        _requireOwned(tokenId);
-
-        string memory _tokenURI = _tokenURIs[tokenId];
-        string memory base = _baseURI();
-
-        // baseURI 未设置 => 直接返回 tokenURI
-        if (bytes(base).length == 0) {
-            return _tokenURI;
-        }
-
-        // baseURI 和 tokenURI 都有 => baseURI + tokenURI
-        if (bytes(_tokenURI).length > 0) {
-            return string.concat(base, _tokenURI);
-        }
-
-        // 否则使用 ERC721 默认的 tokenURI（一般是 baseURI + tokenId）
         return super.tokenURI(tokenId);
     }
 
-    /**
-     * @dev 内部方法：设置 tokenId 对应的 tokenURI。
-     *
-     * 会触发 ERC-4906 的 MetadataUpdate 事件，用于通知前端 metadata 已更新。
-     */
-    function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
-        _tokenURIs[tokenId] = _tokenURI;
-
-        // ERC-4906 标准事件，提醒前端刷新 metadata
-        emit MetadataUpdate(tokenId);
-    }
-}
-```
-
-```solidity [ERC721Votes 源码]
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v5.5.0) 
-
-pragma solidity ^0.8.24;
-
-import {ERC721} from "../ERC721.sol";
-import {Votes} from "../../../governance/utils/Votes.sol";
-
-/**
- * @dev 这是 ERC721 的扩展，让 NFT 支持投票能力（基于 Votes 模块）。
- *
- * 每一个 NFT = 1 票（投票单位）。
- *
- * 注意：NFT 拥有者 **默认没有票权**，必须先执行 delegate（授权）给某人。
- * 原因：Votes 要记录 voting checkpoints，每次修改权益都会有 gas 成本。
- *
- * 用户可以：
- * - delegate 给别人（让代表帮你投票）
- * - delegate 给自己（自投）
- */
-abstract contract ERC721Votes is ERC721, Votes {
-    /**
-     * @dev 重写 ERC721 的 _update，用于在转账过程中同步投票数。
-     *
-     * 每次 NFT 发生转移时：
-     * - 给接收者增加 1 个投票单位
-     * - 从发送者减少 1 个投票单位
-     *
-     * 同时触发 {IVotes-DelegateVotesChanged} 事件。
-     */
-    function _update(address to, uint256 tokenId, address auth)
-        internal
-        virtual
-        override
-        returns (address)
-    {
-        // 执行真正的 ERC721 逻辑（完成 NFT 交换）
-        address previousOwner = super._update(to, tokenId, auth);
-
-        // 同步投票单位（1 个 NFT = 1 voting unit）
-        _transferVotingUnits(previousOwner, to, 1);
-
-        return previousOwner;
-    }
-
-    /**
-     * @dev 返回用户拥有的投票单位数量。
-     *
-     * 对于 NFT，就是 balanceOf(account)（拥有几个 NFT = 有几个投票单位）
-     *
-     * ⚠ 注意：不要重写此函数，否则会破坏投票系统。
-     */
-    function _getVotingUnits(address account)
-        internal
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return balanceOf(account);
-    }
-
-    /**
-     * @dev 重写 ERC721 的 _increaseBalance，主要用于批量 mint。
-     *
-     * 每次 mint 某个用户 amount 个 NFT（可能是批量 mint），
-     * 就需要更新对应的投票单位。
-     */
-    function _increaseBalance(address account, uint128 amount)
-        internal
-        virtual
-        override
-    {
-        super._increaseBalance(account, amount);
-
-        // mint 的时候，把投票单位从 address(0) 转移给用户
-        _transferVotingUnits(address(0), account, amount);
-    }
-}
-```
-:::
-
-`ERC721URIStorage` 是对 `ERC721` 的扩展，实现可变的 Token URI 存储。
-
-允许你给每个 token 设置独立的 URI，并且可以随时修改。
-
-默认 `ERC721` 不存储 tokenURI，只使用 `baseURI + tokenId` 的方式生成。这是最简单、最高效、最轻量的 ERC721 设计。
-
-> [!IMPORTANT] 为什么很多 NFT 需要 ERC721URIStorage？
-> 允许你给每个 token 设置独立的 URI，并且可以随时修改。，如 `tokenURI(1) = ipfs://xxxA，tokenURI(2) = ipfs://xxxB`
-
-## ERC1155
-
-ERC1155 是一种 多代币标准，允许一个合约同时发行：
-- 多个 同质化 代币（像 ERC20）
-- 多个 非同质化 代币（像 ERC721）
-- 半同质化代币（游戏道具类）
-
-> 可以把 ERC1155 理解为：一个合约里存储多个 tokenId 类型，每个 tokenId 可以有自己的数量（像 ERC20）或只铸造 1 个（像 NFT）。
-
-:::code-group
-```solidity [继承 ERC1155]
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
-
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-
-contract MyERC1155Token is ERC1155 {
-    // 构造函数：设置全局 URI 模板
-    constructor() ERC1155("https://mytoken.com/metadata/{id}.json") {}
-
-    // 简单 mint 函数：给指定地址 mint 指定数量的某个 tokenId
-    function mint(address to, uint256 id, uint256 amount) external {
-        _mint(to, id, amount, "");
-    }
-
-    // 简单批量 mint 函数
-    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts) external {
-        _mintBatch(to, ids, amounts, "");
-    }
-}
-```
-
-```solidity [ERC1155 源码]
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
-
-import {IERC1155} from "./IERC1155.sol";
-import {IERC1155MetadataURI} from "./extensions/IERC1155MetadataURI.sol";
-import {ERC1155Utils} from "./utils/ERC1155Utils.sol";
-import {Context} from "../../utils/Context.sol";
-import {IERC165, ERC165} from "../../utils/introspection/ERC165.sol";
-import {Arrays} from "../../utils/Arrays.sol";
-import {IERC1155Errors} from "../../interfaces/draft-IERC6093.sol";
-
-/**
- * @dev ERC1155 多代币标准实现。
- * 特点：
- * - 一个合约管理多个 Token ID
- * - 每个地址对不同 ID 有独立余额
- * - 支持批量转账、批量 Mint、批量 Burn
- * - 支持 URI 模版替换 {id}
- */
-abstract contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI, IERC1155Errors {
-    using Arrays for uint256[];
-    using Arrays for address[];
-
-    // 记录：每种 tokenId 的每个账户拥有多少数量
-    mapping(uint256 id => mapping(address account => uint256)) private _balances;
-
-    // 记录：owner 授权 operator 可管理所有的 token
-    mapping(address account => mapping(address operator => bool)) private _operatorApprovals;
-
-    // 所有 Token 共用一个 URI 模版（包含 {id}）
-    string private _uri;
-
-    constructor(string memory uri_) {
-        _setURI(uri_);
-    }
-
-    /// @dev 支持 ERC165、ERC1155、ERC1155MetadataURI
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        virtual
-        override(ERC165, IERC165)
+        override(ERC721, ERC721URIStorage, ERC721Enumerable)
         returns (bool)
     {
-        return interfaceId == type(IERC1155).interfaceId
-            || interfaceId == type(IERC1155MetadataURI).interfaceId
-            || super.supportsInterface(interfaceId);
+        return super.supportsInterface(interfaceId);
     }
 
-    /**
-     * @dev 返回 URI 模版，例如：
-     * https://xxx.com/{id}.json
-     *
-     * 前端需将 "{id}" 替换为实际 tokenId 的十六进制 64 个字符版本
-     */
-    function uri(uint256 /* id */) public view virtual returns (string memory) {
-        return _uri;
-    }
-
-    /// @dev 返回某账户持有某 Token ID 的余额
-    function balanceOf(address account, uint256 id) public view virtual returns (uint256) {
-        return _balances[id][account];
-    }
-
-    /**
-     * @dev 批量查询多个账户多个 tokenId 的余额
-     * - accounts 和 ids 长度必须一致
-     */
-    function balanceOfBatch(address[] memory accounts, uint256[] memory ids)
-        public
-        view
-        virtual
-        returns (uint256[] memory)
-    {
-        if (accounts.length != ids.length) {
-            revert ERC1155InvalidArrayLength(ids.length, accounts.length);
-        }
-
-        uint256[] memory batchBalances = new uint256[](accounts.length);
-
-        for (uint256 i = 0; i < accounts.length; ++i) {
-            batchBalances[i] = balanceOf(accounts[i], ids[i]);
-        }
-
-        return batchBalances;
-    }
-
-    /// @dev 设置 operator 是否可管理当前用户的所有 Token
-    function setApprovalForAll(address operator, bool approved) public virtual {
-        _setApprovalForAll(_msgSender(), operator, approved);
-    }
-
-    /// @dev 查询某 operator 是否已被授权管理某 account 的所有 Token
-    function isApprovedForAll(address account, address operator)
-        public
-        view
-        virtual
-        returns (bool)
-    {
-        return _operatorApprovals[account][operator];
-    }
-
-    /**
-     * @dev 单 tokenId 安全转账
-     * - 需要 from == msg.sender 或被授权
-     * - 内部调用 _safeTransferFrom
-     */
-    function safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes memory data)
-        public
-        virtual
-    {
-        address sender = _msgSender();
-        if (from != sender && !isApprovedForAll(from, sender)) {
-            revert ERC1155MissingApprovalForAll(sender, from);
-        }
-        _safeTransferFrom(from, to, id, value, data);
-    }
-
-    /**
-     * @dev 批量安全转账
-     */
-    function safeBatchTransferFrom(
-        address from, address to, uint256[] memory ids, uint256[] memory values, bytes memory data
-    ) public virtual {
-        address sender = _msgSender();
-        if (from != sender && !isApprovedForAll(from, sender)) {
-            revert ERC1155MissingApprovalForAll(sender, from);
-        }
-        _safeBatchTransferFrom(from, to, ids, values, data);
-    }
-
-    /**
-     * @dev 最核心：修改余额（不做接收检查）
-     *
-     * - 如果 from = 0，则视为 mint
-     * - 如果 to = 0，则视为 burn
-     * - 如果 id/value 数组长度 >1，则发 batch 事件
-     */
-    function _update(address from, address to, uint256[] memory ids, uint256[] memory values)
+    function _update(address to, uint256 tokenId, address auth)
         internal
-        virtual
+        override(ERC721, ERC721Enumerable)
+        returns (address)
     {
-        if (ids.length != values.length) {
-            revert ERC1155InvalidArrayLength(ids.length, values.length);
-        }
-
-        address operator = _msgSender();
-
-        for (uint256 i = 0; i < ids.length; ++i) {
-            uint256 id = ids[i];
-            uint256 value = values[i];
-
-            // 扣减 from 的余额
-            if (from != address(0)) {
-                uint256 fromBalance = _balances[id][from];
-                if (fromBalance < value) {
-                    revert ERC1155InsufficientBalance(from, fromBalance, value, id);
-                }
-                unchecked {
-                    _balances[id][from] = fromBalance - value;
-                }
-            }
-
-            // 增加 to 的余额
-            if (to != address(0)) {
-                _balances[id][to] += value;
-            }
-        }
-
-        // 事件：单个 or 批量
-        if (ids.length == 1) {
-            emit TransferSingle(operator, from, to, ids[0], values[0]);
-        } else {
-            emit TransferBatch(operator, from, to, ids, values);
-        }
+        return super._update(to, tokenId, auth);
     }
 
-    /**
-     * @dev 带 ERC1155 接收合约检查版本
-     */
-    function _updateWithAcceptanceCheck(
-        address from, address to, uint256[] memory ids, uint256[] memory values, bytes memory data
-    ) internal virtual {
-        _update(from, to, ids, values);
-        if (to != address(0)) {
-            address operator = _msgSender();
-
-            if (ids.length == 1) {
-                ERC1155Utils.checkOnERC1155Received(
-                    operator, from, to, ids[0], values[0], data
-                );
-            } else {
-                ERC1155Utils.checkOnERC1155BatchReceived(
-                    operator, from, to, ids, values, data
-                );
-            }
-        }
-    }
-
-    /**
-     * @dev 单个安全转账
-     */
-    function _safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes memory data)
+    function _increaseBalance(address account, uint128 value)
         internal
+        override(ERC721, ERC721Enumerable)
     {
-        if (to == address(0)) revert ERC1155InvalidReceiver(address(0));
-        if (from == address(0)) revert ERC1155InvalidSender(address(0));
-
-        (uint256[] memory ids, uint256[] memory values) = _asSingletonArrays(id, value);
-        _updateWithAcceptanceCheck(from, to, ids, values, data);
-    }
-
-    /**
-     * @dev 批量安全转账
-     */
-    function _safeBatchTransferFrom(
-        address from, address to, uint256[] memory ids, uint256[] memory values, bytes memory data
-    ) internal {
-        if (to == address(0)) revert ERC1155InvalidReceiver(address(0));
-        if (from == address(0)) revert ERC1155InvalidSender(address(0));
-
-        _updateWithAcceptanceCheck(from, to, ids, values, data);
-    }
-
-    /// @dev 设置全局 URI 模版（包含 {id}）
-    function _setURI(string memory newuri) internal virtual {
-        _uri = newuri;
-    }
-
-    /// @dev Mint 单种 Token
-    function _mint(address to, uint256 id, uint256 value, bytes memory data) internal {
-        if (to == address(0)) revert ERC1155InvalidReceiver(address(0));
-        (uint256[] memory ids, uint256[] memory values) = _asSingletonArrays(id, value);
-        _updateWithAcceptanceCheck(address(0), to, ids, values, data);
-    }
-
-    /// @dev 批量 mint
-    function _mintBatch(address to, uint256[] memory ids, uint256[] memory values, bytes memory data)
-        internal
-    {
-        if (to == address(0)) revert ERC1155InvalidReceiver(address(0));
-        _updateWithAcceptanceCheck(address(0), to, ids, values, data);
-    }
-
-    /// @dev burn 单种 Token
-    function _burn(address from, uint256 id, uint256 value) internal {
-        if (from == address(0)) revert ERC1155InvalidSender(address(0));
-        (uint256[] memory ids, uint256[] memory values) = _asSingletonArrays(id, value);
-        _updateWithAcceptanceCheck(from, address(0), ids, values, "");
-    }
-
-    /// @dev 批量 burn
-    function _burnBatch(address from, uint256[] memory ids, uint256[] memory values) internal {
-        if (from == address(0)) revert ERC1155InvalidSender(address(0));
-        _updateWithAcceptanceCheck(from, address(0), ids, values, "");
-    }
-
-    /// @dev 设置 operator 为 owner 的全局授权者
-    function _setApprovalForAll(address owner, address operator, bool approved) internal virtual {
-        if (operator == address(0)) revert ERC1155InvalidOperator(address(0));
-        _operatorApprovals[owner][operator] = approved;
-        emit ApprovalForAll(owner, operator, approved);
-    }
-
-    /**
-     * @dev 工具函数：把两个数字包装成两个长度为 1 的数组
-     * 用于 mint/transfer/burn 时复用批量逻辑
-     */
-    function _asSingletonArrays(uint256 element1, uint256 element2)
-        private
-        pure
-        returns (uint256[] memory array1, uint256[] memory array2)
-    {
-        assembly {
-            array1 := mload(0x40)
-            mstore(array1, 1)
-            mstore(add(array1, 0x20), element1)
-
-            array2 := add(array1, 0x40)
-            mstore(array2, 1)
-            mstore(add(array2, 0x20), element2)
-
-            mstore(0x40, add(array2, 0x40))
-        }
+        super._increaseBalance(account, value);
     }
 }
 ```
+
+```solidity [链上 NFT（动态生成 SVG）]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
+
+/**
+ * @title OnChainNFT
+ * @dev 完全链上的 NFT（metadata + 图像都在链上）
+ */
+contract OnChainNFT is ERC721, Ownable {
+    using Strings for uint256;
+
+    uint256 private _nextTokenId;
+
+    struct Attributes {
+        string name;
+        uint256 level;
+        uint256 power;
+        string color;
+    }
+
+    mapping(uint256 => Attributes) public tokenAttributes;
+
+    constructor(address initialOwner)
+        ERC721("OnChain NFT", "OCNFT")
+        Ownable(initialOwner)
+    {}
+
+    /**
+     * @dev 铸造并设置属性
+     */
+    function mint(
+        string memory name,
+        uint256 level,
+        uint256 power,
+        string memory color
+    ) external onlyOwner {
+        uint256 tokenId = _nextTokenId++;
+
+        tokenAttributes[tokenId] = Attributes({
+            name: name,
+            level: level,
+            power: power,
+            color: color
+        });
+
+        _safeMint(msg.sender, tokenId);
+    }
+
+    /**
+     * @dev 生成 SVG 图像
+     */
+    function generateSVG(uint256 tokenId) internal view returns (string memory) {
+        Attributes memory attr = tokenAttributes[tokenId];
+
+        return string(abi.encodePacked(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">',
+            '<rect width="300" height="300" fill="', attr.color, '"/>',
+            '<text x="20" y="50" font-size="24" fill="white">',
+            attr.name,
+            '</text>',
+            '<text x="20" y="100" font-size="18" fill="white">Level: ',
+            attr.level.toString(),
+            '</text>',
+            '<text x="20" y="130" font-size="18" fill="white">Power: ',
+            attr.power.toString(),
+            '</text>',
+            '</svg>'
+        ));
+    }
+
+    /**
+     * @dev 生成 Token URI（完全链上）
+     */
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
+        _requireOwned(tokenId);
+
+        Attributes memory attr = tokenAttributes[tokenId];
+
+        string memory svg = generateSVG(tokenId);
+        string memory svgBase64 = Base64.encode(bytes(svg));
+
+        string memory json = string(abi.encodePacked(
+            '{"name":"', attr.name,
+            '","description":"Fully on-chain NFT",',
+            '"image":"data:image/svg+xml;base64,', svgBase64,
+            '","attributes":[',
+            '{"trait_type":"Level","value":', attr.level.toString(), '},',
+            '{"trait_type":"Power","value":', attr.power.toString(), '}',
+            ']}'
+        ));
+
+        return string(abi.encodePacked(
+            "data:application/json;base64,",
+            Base64.encode(bytes(json))
+        ));
+    }
+}
+```
+
+```solidity [NFT 版税（EIP-2981）]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721Royalty} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title RoyaltyNFT
+ * @dev 支持版税的 NFT（EIP-2981）
+ */
+contract RoyaltyNFT is ERC721, ERC721Royalty, Ownable {
+    uint256 private _nextTokenId;
+
+    // 默认版税：5%
+    uint96 public constant DEFAULT_ROYALTY = 500; // 500 = 5%（基数 10000）
+
+    constructor(address initialOwner)
+        ERC721("Royalty NFT", "RNFT")
+        Ownable(initialOwner)
+    {
+        // 设置默认版税接收者和比例
+        _setDefaultRoyalty(initialOwner, DEFAULT_ROYALTY);
+    }
+
+    /**
+     * @dev 铸造 NFT
+     */
+    function mint(address to) external onlyOwner {
+        uint256 tokenId = _nextTokenId++;
+        _safeMint(to, tokenId);
+    }
+
+    /**
+     * @dev 铸造并设置自定义版税
+     */
+    function mintWithRoyalty(
+        address to,
+        address royaltyReceiver,
+        uint96 royaltyFraction
+    ) external onlyOwner {
+        uint256 tokenId = _nextTokenId++;
+        _safeMint(to, tokenId);
+        _setTokenRoyalty(tokenId, royaltyReceiver, royaltyFraction);
+    }
+
+    /**
+     * @dev 更新默认版税
+     */
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator)
+        external
+        onlyOwner
+    {
+        _setDefaultRoyalty(receiver, feeNumerator);
+    }
+
+    /**
+     * @dev 重写 supportsInterface
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721Royalty)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+}
+```
+
 :::
+
+### NFT Metadata 最佳实践
+
+#### 1. URI 设计模式
+
+```solidity
+// ❌ 错误：硬编码 URI
+function tokenURI(uint256 tokenId) public view returns (string memory) {
+    return "https://example.com/token/1.json"; // 所有 token 都一样！
+}
+
+// ✅ 方案 1：Base URI + Token ID
+function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    return string(abi.encodePacked(_baseURI(), tokenId.toString()));
+}
+// 结果：https://example.com/metadata/1, /2, /3...
+
+// ✅ 方案 2：单独存储每个 URI（ERC721URIStorage）
+function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    return _tokenURIs[tokenId]; // 每个 token 独立 URI
+}
+```
+
+#### 2. IPFS 集成
+
+```solidity
+// ✅ 推荐：使用 IPFS CID
+contract IPFSBasedNFT is ERC721 {
+    string private constant BASE_URI = "ipfs://QmXXX..."; // IPFS CID
+
+    function _baseURI() internal pure override returns (string memory) {
+        return BASE_URI;
+    }
+
+    // tokenURI(1) → ipfs://QmXXX.../1
+}
+```
+
+#### 3. Metadata JSON 标准
+
+```json
+{
+  "name": "My NFT #1",
+  "description": "This is my awesome NFT",
+  "image": "ipfs://Qm.../image.png",
+  "external_url": "https://example.com/nft/1",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Power",
+      "value": 95,
+      "max_value": 100
+    },
+    {
+      "display_type": "boost_percentage",
+      "trait_type": "Speed Boost",
+      "value": 10
+    }
+  ]
+}
+```
+
+## ERC1155 详解
+
+**ERC1155** 是多代币标准，一个合约可以管理多个 Token ID，每个 ID 可以有不同的数量。
+
+### 核心优势
+
+```mermaid
+graph TB
+    A[ERC1155 合约] --> B[ID: 1 金币<br/>供应量: 1000000]
+    A --> C[ID: 2 传奇武器<br/>供应量: 1<br/>NFT]
+    A --> D[ID: 3 普通武器<br/>供应量: 5000]
+
+    B --> E[Alice: 100 个]
+    B --> F[Bob: 50 个]
+
+    C --> G[Alice: 1 个<br/>唯一 NFT]
+
+    D --> H[Bob: 3 个]
+    D --> I[Charlie: 10 个]
+
+    style A fill:#FFD700
+    style C fill:#FFB6C6
+```
+
+### ERC1155 vs ERC20 + ERC721
+
+| 对比项     | ERC20 + ERC721          | ERC1155                  |
+| ------- | ----------------------- | ------------------------ |
+| **合约数量** | 每种代币 1 个合约               | 所有代币 1 个合约                |
+| **批量转账** | ❌ 不支持                   | ✅ 原生支持                   |
+| **Gas**  | 高（多次调用）                 | ✅ 低（批量优化）                |
+| **适用场景** | DeFi、单一 NFT 系列          | 游戏（多种道具）、SBT、票券          |
+
+### 完整实现示例
+
+:::code-group
+
+```solidity [游戏道具合约]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+
+/**
+ * @title GameItems
+ * @dev 游戏道具：金币、武器、装备
+ */
+contract GameItems is ERC1155, Ownable {
+    using Strings for uint256;
+
+    // Token ID 定义
+    uint256 public constant GOLD = 0;           // 金币（同质化）
+    uint256 public constant SWORD = 1;          // 普通剑（半同质化）
+    uint256 public constant LEGENDARY_SWORD = 2; // 传奇剑（NFT）
+    uint256 public constant SHIELD = 3;         // 盾牌（半同质化）
+
+    string private _baseURI;
+
+    constructor(string memory baseURI, address initialOwner)
+        ERC1155(baseURI)
+        Ownable(initialOwner)
+    {
+        _baseURI = baseURI;
+
+        // 初始铸造
+        _mint(initialOwner, GOLD, 1_000_000, "");  // 100 万金币
+        _mint(initialOwner, SWORD, 1000, "");      // 1000 把普通剑
+        _mint(initialOwner, LEGENDARY_SWORD, 1, ""); // 1 把传奇剑（唯一）
+    }
+
+    /**
+     * @dev 批量铸造
+     */
+    function mintBatch(
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts
+    ) external onlyOwner {
+        _mintBatch(to, ids, amounts, "");
+    }
+
+    /**
+     * @dev 游戏内获得奖励
+     */
+    function rewardPlayer(address player, uint256 goldAmount) external onlyOwner {
+        _mint(player, GOLD, goldAmount, "");
+    }
+
+    /**
+     * @dev 批量转账（玩家交易）
+     */
+    function batchTransfer(
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts
+    ) external {
+        require(
+            from == msg.sender || isApprovedForAll(from, msg.sender),
+            "Not authorized"
+        );
+        safeBatchTransferFrom(from, to, ids, amounts, "");
+    }
+
+    /**
+     * @dev 返回完整 URI
+     */
+    function uri(uint256 tokenId) public view override returns (string memory) {
+        return string(abi.encodePacked(_baseURI, tokenId.toString(), ".json"));
+    }
+
+    /**
+     * @dev 设置 base URI
+     */
+    function setURI(string memory newURI) external onlyOwner {
+        _baseURI = newURI;
+    }
+}
+```
+
+```solidity [NFT + 代币混合]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import {ERC1155Supply} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title MixedTokens
+ * @dev 同时支持 NFT 和同质化代币
+ */
+contract MixedTokens is ERC1155, ERC1155Supply, Ownable {
+    // ID 范围定义
+    uint256 private constant FUNGIBLE_START = 0;
+    uint256 private constant FUNGIBLE_END = 999;
+    uint256 private constant NFT_START = 1000;
+
+    uint256 private _nextNFTId = NFT_START;
+
+    constructor(address initialOwner)
+        ERC1155("https://example.com/metadata/{id}.json")
+        Ownable(initialOwner)
+    {}
+
+    /**
+     * @dev 铸造同质化代币
+     */
+    function mintFungible(address to, uint256 id, uint256 amount)
+        external
+        onlyOwner
+    {
+        require(id >= FUNGIBLE_START && id <= FUNGIBLE_END, "Invalid fungible ID");
+        _mint(to, id, amount, "");
+    }
+
+    /**
+     * @dev 铸造 NFT（自动递增 ID）
+     */
+    function mintNFT(address to) external onlyOwner returns (uint256) {
+        uint256 tokenId = _nextNFTId++;
+        _mint(to, tokenId, 1, "");
+        return tokenId;
+    }
+
+    /**
+     * @dev 检查是否为 NFT
+     */
+    function isNFT(uint256 tokenId) public pure returns (bool) {
+        return tokenId >= NFT_START;
+    }
+
+    /**
+     * @dev 查询 NFT 所有者（单个持有者）
+     */
+    function ownerOfNFT(uint256 tokenId) external view returns (address) {
+        require(isNFT(tokenId), "Not an NFT");
+        require(totalSupply(tokenId) == 1, "Invalid NFT supply");
+
+        // 遍历查找所有者（低效，仅示例）
+        // 实际应用应使用 mapping 记录
+        return address(0); // 简化示例
+    }
+
+    /**
+     * @dev 批量查询余额
+     */
+    function balancesOf(address account, uint256[] memory ids)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        uint256[] memory balances = new uint256[](ids.length);
+        for (uint256 i = 0; i < ids.length; i++) {
+            balances[i] = balanceOf(account, ids[i]);
+        }
+        return balances;
+    }
+
+    // ===================== 重写函数 =====================
+
+    function _update(
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory values
+    ) internal override(ERC1155, ERC1155Supply) {
+        super._update(from, to, ids, values);
+    }
+}
+```
+
+:::
+
+### ERC1155 批量操作优势
+
+```typescript
+// ❌ ERC721：需要 3 次交易
+await nft.transferFrom(alice, bob, 1);
+await nft.transferFrom(alice, bob, 2);
+await nft.transferFrom(alice, bob, 3);
+// Gas: ~150k
+
+// ✅ ERC1155：1 次批量交易
+await erc1155.safeBatchTransferFrom(alice, bob, [1, 2, 3], [1, 1, 1], "0x");
+// Gas: ~80k（节省 47%）
+```
+
+## 代币安全最佳实践
+
+### 1. 铸币权限控制
+
+```solidity
+// ❌ 危险：任何人都能铸币
+contract BadToken is ERC20 {
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount); // 无限增发！
+    }
+}
+
+// ✅ 推荐：严格权限控制
+contract GoodToken is ERC20, Ownable {
+    function mint(address to, uint256 amount) external onlyOwner {
+        require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds cap");
+        _mint(to, amount);
+    }
+}
+
+// ✅ 更安全：时间锁 + 多签
+contract SafeToken is ERC20 {
+    address public timelock;
+
+    function mint(address to, uint256 amount) external {
+        require(msg.sender == timelock, "Only timelock");
+        _mint(to, amount);
+    }
+}
+```
+
+### 2. 防止重入攻击
+
+```solidity
+// ❌ 危险：回调函数可被重入
+contract BadNFT is ERC721 {
+    mapping(uint256 => uint256) public rewards;
+
+    function claimReward(uint256 tokenId) external {
+        uint256 reward = rewards[tokenId];
+
+        // 🔥 危险：先转账，后清零
+        payable(msg.sender).transfer(reward);
+        rewards[tokenId] = 0;
+    }
+}
+
+// ✅ 正确：使用 ReentrancyGuard
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+contract SafeNFT is ERC721, ReentrancyGuard {
+    mapping(uint256 => uint256) public rewards;
+
+    function claimReward(uint256 tokenId) external nonReentrant {
+        uint256 reward = rewards[tokenId];
+        rewards[tokenId] = 0; // 先清零
+
+        payable(msg.sender).transfer(reward); // 后转账
+    }
+}
+```
+
+### 3. 授权安全
+
+```solidity
+// ❌ 危险：无限授权
+function approveAll(address spender) external {
+    _approve(msg.sender, spender, type(uint256).max); // 不安全！
+}
+
+// ✅ 推荐：按需授权
+function approveExact(address spender, uint256 amount) external {
+    _approve(msg.sender, spender, amount);
+}
+
+// ✅ 使用 Permit（EIP-2612）避免授权
+// 用户链下签名，合约内验证签名后直接转账
+```
+
+### 4. 元数据安全
+
+```solidity
+// ❌ 危险：中心化服务器可随意修改
+string private _baseURI = "https://api.example.com/"; // 可被修改
+
+// ✅ 推荐：使用 IPFS
+string private _baseURI = "ipfs://QmXXX/"; // 内容寻址，不可篡改
+
+// ✅ 最安全：完全链上
+function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    return generateOnChainSVG(tokenId); // 完全去中心化
+}
+```
+
+## 常见问题 FAQ
+
+### Q1: ERC20、ERC721、ERC1155 如何选择？
+
+**A:**
+
+| 需求              | 推荐标准      | 原因                |
+| --------------- | --------- | ----------------- |
+| DeFi 代币、治理代币    | ERC20     | 同质化、可分割           |
+| 艺术品 NFT、头像 NFT  | ERC721    | 唯一性、独立 metadata  |
+| 游戏道具（多种）        | ERC1155   | 批量操作、Gas 效率高     |
+| 单一 NFT 系列       | ERC721    | 简单、兼容性好           |
+| SBT（灵魂绑定代币）     | ERC721/1155 | 不可转移扩展            |
+
+### Q2: 为什么 NFT 需要 `_safeMint` 而不是 `_mint`？
+
+**A:**
+
+```solidity
+// _mint：直接铸造，不检查接收者
+_mint(to, tokenId);
+// 问题：如果 to 是合约且不支持 ERC721，NFT 永久锁定！
+
+// _safeMint：检查接收者是否支持 ERC721
+_safeMint(to, tokenId);
+// 如果 to 是合约，必须实现 onERC721Received 回调函数
+```
+
+**推荐：**
+- 用户地址：用 `_mint`（节省 Gas）
+- 合约地址：用 `_safeMint`（安全）
+- 不确定：用 `_safeMint`
+
+### Q3: Token URI 应该存储在哪里？
+
+**A:**
+
+| 存储方式      | 优点            | 缺点              | 适用场景       |
+| --------- | ------------- | --------------- | ---------- |
+| **中心化服务器** | 灵活、可修改        | 可被关闭、可被篡改       | 测试环境       |
+| **IPFS**  | 去中心化、内容寻址     | 需要 pinning 服务   | ✅ 生产环境（推荐） |
+| **Arweave** | 永久存储          | 成本高             | 高价值 NFT    |
+| **完全链上**    | 最安全、完全去中心化    | Gas 成本极高、数据量受限 | 小型 NFT、艺术实验 |
+
+### Q4: 如何实现白名单铸造？
+
+**A:**
+
+```solidity
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
+contract WhitelistNFT is ERC721 {
+    bytes32 public merkleRoot;
+
+    function setMerkleRoot(bytes32 root) external onlyOwner {
+        merkleRoot = root;
+    }
+
+    function whitelistMint(bytes32[] calldata proof) external payable {
+        // 验证 Merkle proof
+        require(
+            MerkleProof.verify(proof, merkleRoot, keccak256(abi.encodePacked(msg.sender))),
+            "Not whitelisted"
+        );
+
+        _safeMint(msg.sender, _nextTokenId++);
+    }
+}
+```
+
+### Q5: 如何优化批量铸造 Gas？
+
+**A:**
+
+```solidity
+// ❌ 低效：逐个铸造
+function mintBatch(address to, uint256 quantity) external {
+    for (uint256 i = 0; i < quantity; i++) {
+        _safeMint(to, _nextTokenId++); // 每次都触发事件
+    }
+}
+// Gas: ~180k * quantity
+
+// ✅ 优化：使用 ERC721Consecutive（批量优化）
+import {ERC721Consecutive} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Consecutive.sol";
+
+contract OptimizedNFT is ERC721Consecutive {
+    constructor() ERC721("Optimized", "OPT") {
+        _mintConsecutive(msg.sender, 100); // 批量铸造 100 个
+    }
+}
+// Gas: ~60k（节省 67%）
+```
+
+### Q6: 如何实现代币质押？
+
+**A:**
+
+```solidity
+contract Staking {
+    IERC20 public token;
+    mapping(address => uint256) public stakedBalance;
+    mapping(address => uint256) public stakeTime;
+
+    function stake(uint256 amount) external {
+        token.transferFrom(msg.sender, address(this), amount);
+        stakedBalance[msg.sender] += amount;
+        stakeTime[msg.sender] = block.timestamp;
+    }
+
+    function unstake() external {
+        uint256 amount = stakedBalance[msg.sender];
+        require(amount > 0, "No stake");
+
+        stakedBalance[msg.sender] = 0;
+        token.transfer(msg.sender, amount);
+    }
+
+    function calculateReward(address user) public view returns (uint256) {
+        uint256 duration = block.timestamp - stakeTime[user];
+        return (stakedBalance[user] * duration) / 365 days; // 年化 100%
+    }
+}
+```

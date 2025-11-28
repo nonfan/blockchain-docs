@@ -1,70 +1,172 @@
 # Access
 
-> 权限控制, 最常用也最重要
+> 权限控制：智能合约的安全基石
 
 > [!IMPORTANT] 本节重点
-> 1. 如何添加管理员权限？
-> 2. 如何扩展多角色管理？
-> 3. 如何在 DApp 中检查权限？
-> 4. 哪些函数应该 onlyOwner，哪些应该 onlyRole？
+> 1. Ownable、Ownable2Step、AccessControl 如何选择？
+> 2. 如何设计多角色权限系统？
+> 3. 如何防止权限丢失和误操作？
+> 4. 权限升级和最佳实践是什么？
+
+## 权限控制的重要性
+
+智能合约一旦部署无法修改，权限管理不当可能导致：
+- 💸 资金永久锁定或被盗
+- 🔒 合约功能无法升级
+- ⚠️ 恶意用户滥用特权功能
+- 🚫 合法管理员无法操作
+
+OpenZeppelin 提供了三种权限控制方案，适用不同场景。
+
+## 三种权限模式对比
+
+| 特性            | Ownable          | Ownable2Step         | AccessControl      |
+| ------------- | ---------------- | -------------------- | ------------------ |
+| **复杂度**       | ⭐ 最简单           | ⭐⭐ 简单              | ⭐⭐⭐ 复杂           |
+| **权限粒度**      | 单一 owner        | 单一 owner（安全转移）      | 多角色、细粒度            |
+| **转移安全性**     | ⚠️ 一步完成，易出错     | ✅ 两步确认，更安全          | ✅ 灵活授权撤销          |
+| **Gas 成本**    | 低                | 低                    | 中等（存储更多）           |
+| **扩展性**       | ❌ 难以扩展         | ❌ 难以扩展             | ✅ 高度灵活            |
+| **适用场景**      | 简单合约、原型        | 生产级单管理员             | 复杂系统、DAO、DeFi     |
+| **误操作风险**     | ⚠️ 高（一键放弃所有权）   | ⚠️ 中（两步确认）          | ✅ 低（可撤销）          |
+| **多签支持**      | 需配合 Gnosis Safe | 需配合 Gnosis Safe     | ✅ 内置多角色          |
+
+**选择建议：**
+- 🔰 学习/测试合约 → **Ownable**
+- 🏢 生产级单管理员 → **Ownable2Step**
+- 🏗️ 复杂权限系统 → **AccessControl**
 
 ## Ownable
 
-Ownable 是 OpenZeppelin 提供的一个合约模块，用于管理 单一所有者（Owner） 权限。
+**Ownable** 提供最基础的单一所有者权限控制。
 
-控制某些函数只能被合约的 Owner 调用，常用于控制关键操作，如资金管理、参数修改、升级权限等。
+### 核心功能
+
+```mermaid
+graph LR
+    A[部署合约] -->|设置 owner| B[Owner 地址]
+    B -->|onlyOwner| C[执行特权函数]
+    B -->|transferOwnership| D[新 Owner]
+    B -->|renounceOwnership| E[address(0)]
+
+    style B fill:#90EE90
+    style E fill:#FFB6C6
+```
+
+### 完整示例
 
 :::code-group
 
-```solidity [继承 Ownable]
+```solidity [简单 DeFi 协议]
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Access is Ownable {
+/**
+ * @dev 简单的流动性池
+ */
+contract LiquidityPool is Ownable {
+    uint256 public feeRate = 30; // 0.3% (30/10000)
+    mapping(address => uint256) public balances;
+
+    event FeeRateUpdated(uint256 oldRate, uint256 newRate);
+    event Deposited(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+
     constructor(address initialOwner) Ownable(initialOwner) {}
+
     /**
-     * 如果你希望使用部署人的地址作为Owner，如下
-     * constructor() Ownable(msg.sender) {}
-     * 
-    **/
+     * @dev 存款（任何人）
+     */
+    function deposit() external payable {
+        balances[msg.sender] += msg.value;
+        emit Deposited(msg.sender, msg.value);
+    }
+
+    /**
+     * @dev 提款（任何人）
+     */
+    function withdraw(uint256 amount) external {
+        require(balances[msg.sender] >= amount, "Insufficient balance");
+
+        balances[msg.sender] -= amount;
+        payable(msg.sender).transfer(amount);
+
+        emit Withdrawn(msg.sender, amount);
+    }
+
+    /**
+     * @dev 修改费率（仅 owner）
+     */
+    function setFeeRate(uint256 newFeeRate) external onlyOwner {
+        require(newFeeRate <= 100, "Fee too high"); // 最高 1%
+
+        uint256 oldRate = feeRate;
+        feeRate = newFeeRate;
+
+        emit FeeRateUpdated(oldRate, newFeeRate);
+    }
+
+    /**
+     * @dev 提取手续费（仅 owner）
+     */
+    function collectFees() external onlyOwner {
+        uint256 balance = address(this).balance;
+        payable(owner()).transfer(balance);
+    }
+
+    /**
+     * @dev 紧急暂停（结合 Pausable）
+     */
+    function emergencyPause() external onlyOwner {
+        // 配合 Pausable 使用
+    }
 }
 ```
 
-```solidity [Ownable 源码]
+```solidity [Ownable 源码详解]
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.20;
 
 import {Context} from "../utils/Context.sol";
 
 /**
- * @dev 基础权限控制合约，提供单一 owner 权限管理。
- * 继承后可使用 onlyOwner 修饰符限制函数访问。
+ * @dev 单一所有者权限控制
+ *
+ * 核心功能：
+ * - owner(): 查询当前所有者
+ * - onlyOwner: 限制函数仅 owner 可调用
+ * - transferOwnership(): 转移所有权
+ * - renounceOwnership(): 放弃所有权（⚠️ 不可逆）
  */
 abstract contract Ownable is Context {
-    // 当前合约所有者
     address private _owner;
 
-    // 自定义错误
-    error OwnableUnauthorizedAccount(address account); // 非 owner 调用
-    error OwnableInvalidOwner(address owner);         // 无效 owner 地址
+    /// @dev 错误：未授权的账户
+    error OwnableUnauthorizedAccount(address account);
 
-    // 所有权转移事件
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    /// @dev 错误：无效的 owner 地址
+    error OwnableInvalidOwner(address owner);
+
+    /// @dev 事件：所有权转移
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
 
     /**
-     * @dev 构造函数，部署者为初始 owner
+     * @dev 构造函数：设置初始 owner
      */
     constructor(address initialOwner) {
-        if (initialOwner == address(0)) revert OwnableInvalidOwner(address(0));
+        if (initialOwner == address(0)) {
+            revert OwnableInvalidOwner(address(0));
+        }
         _transferOwnership(initialOwner);
     }
 
     /**
-     * @dev 限制函数只能被 owner 调用
+     * @dev 修饰器：仅 owner 可调用
      */
     modifier onlyOwner() {
         _checkOwner();
@@ -79,29 +181,34 @@ abstract contract Ownable is Context {
     }
 
     /**
-     * @dev 校验调用者是否为 owner
+     * @dev 检查调用者是否为 owner
      */
     function _checkOwner() internal view virtual {
-        if (owner() != _msgSender()) revert OwnableUnauthorizedAccount(_msgSender());
+        if (owner() != _msgSender()) {
+            revert OwnableUnauthorizedAccount(_msgSender());
+        }
     }
 
     /**
-     * @dev 放弃所有权，owner 变为 0
+     * @dev 放弃所有权
+     * ⚠️ 警告：不可逆操作！
      */
     function renounceOwnership() public virtual onlyOwner {
         _transferOwnership(address(0));
     }
 
     /**
-     * @dev 转移所有权给 newOwner
+     * @dev 转移所有权
      */
     function transferOwnership(address newOwner) public virtual onlyOwner {
-        if (newOwner == address(0)) revert OwnableInvalidOwner(address(0));
+        if (newOwner == address(0)) {
+            revert OwnableInvalidOwner(address(0));
+        }
         _transferOwnership(newOwner);
     }
 
     /**
-     * @dev 内部函数，更新 owner 并触发事件
+     * @dev 内部：执行所有权转移
      */
     function _transferOwnership(address newOwner) internal virtual {
         address oldOwner = _owner;
@@ -110,396 +217,696 @@ abstract contract Ownable is Context {
     }
 }
 ```
+
 :::
 
+### 常见陷阱
+
+```solidity
+// ❌ 错误 1：误操作放弃所有权
+contract BadExample is Ownable {
+    function cleanup() external onlyOwner {
+        renounceOwnership(); // 🔥 永久失去控制权！
+    }
+}
+
+// ❌ 错误 2：转移到错误地址
+function transferToWrongAddress() external onlyOwner {
+    transferOwnership(0x0000000000000000000000000000000000000001); // 🔥 无效地址
+}
+
+// ❌ 错误 3：constructor 中误用
+contract BadConstructor is Ownable {
+    constructor() Ownable(address(0)) {} // 🔥 会 revert
+}
+
+// ✅ 正确做法
+contract GoodExample is Ownable {
+    bool public ownershipRenounced;
+
+    constructor(address initialOwner) Ownable(initialOwner) {}
+
+    // 两步确认放弃所有权
+    function initiateRenounce() external onlyOwner {
+        ownershipRenounced = true;
+    }
+
+    function confirmRenounce() external onlyOwner {
+        require(ownershipRenounced, "Not initiated");
+        renounceOwnership();
+    }
+}
+```
+
+## Ownable2Step
+
+**Ownable2Step** 提供两步确认的所有权转移，避免误操作。
+
+### 工作流程
+
+```mermaid
+sequenceDiagram
+    participant 当前Owner
+    participant 合约
+    participant 新Owner
+
+    当前Owner->>合约: 1. transferOwnership(newOwner)
+    合约->>合约: pendingOwner = newOwner
+    Note over 合约: owner 未改变
+
+    新Owner->>合约: 2. acceptOwnership()
+    合约->>合约: owner = pendingOwner
+    合约->>合约: pendingOwner = address(0)
+
+    Note over 新Owner: 成功成为 owner
+
+    style 合约 fill:#87CEEB
+    style 新Owner fill:#90EE90
+```
+
+### 实现示例
+
+:::code-group
+
+```solidity [使用 Ownable2Step]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @dev 生产级协议合约
+ */
+contract ProductionProtocol is Ownable2Step {
+    uint256 public parameter;
+
+    event ParameterUpdated(uint256 newValue);
+
+    constructor(address initialOwner) Ownable(initialOwner) {}
+
+    /**
+     * @dev 更新参数（仅 owner）
+     */
+    function updateParameter(uint256 newValue) external onlyOwner {
+        parameter = newValue;
+        emit ParameterUpdated(newValue);
+    }
+
+    /**
+     * @dev 转移所有权（两步流程）
+     * 1. 当前 owner 调用 transferOwnership(newOwner)
+     * 2. newOwner 调用 acceptOwnership()
+     */
+
+    /**
+     * @dev 查询待定的新 owner
+     */
+    function getPendingOwner() external view returns (address) {
+        return pendingOwner();
+    }
+}
+```
+
+```solidity [Ownable2Step 源码]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Ownable} from "./Ownable.sol";
+
+/**
+ * @dev 两步确认的所有权转移
+ *
+ * 流程：
+ * 1. owner 调用 transferOwnership(newOwner)
+ * 2. newOwner 调用 acceptOwnership()
+ *
+ * 优势：防止转移到错误地址
+ */
+abstract contract Ownable2Step is Ownable {
+    address private _pendingOwner;
+
+    /// @dev 事件：所有权转移已启动
+    event OwnershipTransferStarted(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
+
+    /**
+     * @dev 返回待定的新 owner
+     */
+    function pendingOwner() public view virtual returns (address) {
+        return _pendingOwner;
+    }
+
+    /**
+     * @dev 第一步：启动所有权转移
+     * 仅设置 pendingOwner，不改变 owner
+     */
+    function transferOwnership(address newOwner)
+        public
+        virtual
+        override
+        onlyOwner
+    {
+        _pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner(), newOwner);
+    }
+
+    /**
+     * @dev 第二步：新 owner 接受所有权
+     */
+    function acceptOwnership() public virtual {
+        address sender = _msgSender();
+
+        if (pendingOwner() != sender) {
+            revert OwnableUnauthorizedAccount(sender);
+        }
+
+        _transferOwnership(sender);
+        delete _pendingOwner;
+    }
+
+    /**
+     * @dev 重写：放弃所有权时清除 pendingOwner
+     */
+    function renounceOwnership() public virtual override onlyOwner {
+        delete _pendingOwner;
+        super.renounceOwnership();
+    }
+}
+```
+
+:::
+
+### 对比 Ownable
+
+| 操作       | Ownable                    | Ownable2Step                    |
+| -------- | -------------------------- | ------------------------------- |
+| 转移所有权    | 一步完成，立即生效                  | 两步确认，新 owner 需接受                |
+| 误操作风险    | ⚠️ 高（可能转到错误地址）             | ✅ 低（新 owner 必须主动接受）             |
+| Gas 成本   | 低                          | 略高（多一次交易）                       |
+| 适用场景     | 测试、简单合约                    | 生产环境、高价值合约                      |
+| 恢复可能性    | ❌ 转移后无法撤销                 | ✅ 转移前可撤销（重新调用 transferOwnership） |
 
 ## AccessControl
 
-AccessControl 是 OpenZeppelin 的 角色权限控制系统。
+**AccessControl** 提供灵活的基于角色的权限控制（RBAC）。
 
-它比 Ownable 强大得多，允许你：
+### 核心概念
 
-1. 创建多个不同的角色
-2. 为每个角色授予或撤销权限
-3. 设置角色的管理员
-4. 使用 onlyRole 修饰器保护函数
+```mermaid
+graph TB
+    A[DEFAULT_ADMIN_ROLE<br/>0x00] -->|管理| B[MINTER_ROLE]
+    A -->|管理| C[BURNER_ROLE]
+    A -->|管理| D[PAUSER_ROLE]
 
-**角色定义是 bytes32 常量：**
+    B -->|授权| E[铸币员 Alice]
+    B -->|授权| F[铸币员 Bob]
+
+    C -->|授权| G[销毁员 Charlie]
+
+    D -->|授权| H[暂停员 David]
+
+    A -->|超级权限| I[Admin Eve]
+
+    style A fill:#FFD700
+    style B fill:#87CEEB
+    style C fill:#87CEEB
+    style D fill:#87CEEB
+```
+
+### 角色定义
 
 ```solidity
+// 角色使用 bytes32 定义
 bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-// 默认AccessControl声明了默认超级管理员
+bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+// 默认管理员角色（管理所有角色）
 bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 ```
 
-> [!IMPORTANT] 超重要
-> `DEFAULT_ADMIN_ROLE` 才能管理所有角色
->| 规则          | 解释                           |
->| ----------- | ---------------------------- |
->| 是所有角色的默认管理员 | 可以授予/撤销任意角色                  |
->| 也可以管理自己     | 它还能授予/撤销 DEFAULT_ADMIN_ROLE！ |
->| 权限非常大       | 必须保护好这个角色                    |
-
-
-**底层数据结构:**
-
-
-```solidity
-struct RoleData {
-    mapping(address => bool) hasRole;
-    bytes32 adminRole; // adminRole 默认未赋值，即0x00,也就是DEFAULT_ADMIN_ROLE
-}
-```
-
-| 方法 / 常量                                | 用途说明（极简版）                        |
-| -------------------------------------- | -------------------------------- |
-| `DEFAULT_ADMIN_ROLE`                 | 所有角色的初始管理员（0x00），拥有最高权限，可管理所有角色。 |
-| `grantRole(role, account)`           | 赋予某账号一个角色（需要该角色的管理员权限）。          |
-| `revokeRole(role, account)`          | 从某账号移除角色（需要该角色的管理员权限）。           |
-| `renounceRole(role, account)`        | 账号自己放弃自己角色，用于账号被盗等情况。            |
-| `hasRole(role, account)`             | 检查某账号是否有某角色。                     |
-| `onlyRole(role)`                     | 限制函数必须由某角色调用。                    |
-| `getRoleAdmin(role)`                 | 查询某角色的管理员角色是谁。                   |
-| `_grantRole / _revokeRole（internal）` | 内部函数，用于构造函数中初始化角色。               |
-| `_setRoleAdmin(role, newAdmin)`      | 修改某角色的管理员（高级用法）。                 |
-
+### 完整示例
 
 :::code-group
 
-```solidity [继承 AccessControl]
+```solidity [DeFi 代币合约]
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract MyAccess is AccessControl {
+/**
+ * @dev 完整的 DeFi 代币：多角色权限管理
+ */
+contract DeFiToken is ERC20, AccessControl, Pausable {
+    // 定义角色
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    constructor(address admin) {
+    // 最大供应量
+    uint256 public constant MAX_SUPPLY = 1_000_000 * 10**18;
+
+    constructor(address admin) ERC20("DeFi Token", "DFT") {
+        // 授予 admin 所有角色
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(MINTER_ROLE, admin);
+        _grantRole(BURNER_ROLE, admin);
+        _grantRole(PAUSER_ROLE, admin);
     }
 
-    function mint() external onlyRole(MINTER_ROLE) {
-        // mint logic
+    /**
+     * @dev 铸币（仅 MINTER_ROLE）
+     */
+    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
+        require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
+        _mint(to, amount);
+    }
+
+    /**
+     * @dev 销毁（仅 BURNER_ROLE）
+     */
+    function burn(address from, uint256 amount) external onlyRole(BURNER_ROLE) {
+        _burn(from, amount);
+    }
+
+    /**
+     * @dev 暂停（仅 PAUSER_ROLE）
+     */
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    /**
+     * @dev 恢复（仅 PAUSER_ROLE）
+     */
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
+    /**
+     * @dev 重写：转账时检查暂停状态
+     */
+    function _update(address from, address to, uint256 amount)
+        internal
+        override
+        whenNotPaused
+    {
+        super._update(from, to, amount);
     }
 }
 ```
 
-```solidity [AccessControl 源码]
+```solidity [DAO 金库管理]
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IAccessControl} from "./IAccessControl.sol";
-import {Context} from "../utils/Context.sol";
-import {IERC165, ERC165} from "../utils/introspection/ERC165.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
- * @dev AccessControl 提供角色权限管理。
- *
- * - 每个角色用 bytes32 表示。
- * - 某个地址是否拥有某角色 = hasRole(role, account)
- * - 授权/撤销角色 = grantRole / revokeRole
- * - 每个角色有一个“管理员角色”（adminRole）
- * - 只有拥有“管理员角色”的账户才能授予/撤销对应角色
- *
- * - 默认情况下，所有角色的管理员角色是 DEFAULT_ADMIN_ROLE(0x00)
- * - DEFAULT_ADMIN_ROLE 也管理它自己（最高权限）
+ * @dev DAO 金库：分层权限管理
  */
-abstract contract AccessControl is Context, IAccessControl, ERC165 {
-    
-    /**
-     * @dev 每个角色的数据结构
-     *
-     * hasRole[address] = true/false  表示该地址是否拥有角色
-     * adminRole = 管理该角色的角色 ID
-     */
-    struct RoleData {
-        mapping(address account => bool) hasRole;
-        bytes32 adminRole;
+contract DAOTreasury is AccessControl {
+    // 角色定义
+    bytes32 public constant TREASURER_ROLE = keccak256("TREASURER_ROLE");
+    bytes32 public constant AUDITOR_ROLE = keccak256("AUDITOR_ROLE");
+    bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
+
+    struct Proposal {
+        address to;
+        uint256 amount;
+        bool executed;
+        uint256 approvals;
     }
 
-    /// @dev role => RoleData
-    mapping(bytes32 role => RoleData) private _roles;
+    mapping(uint256 => Proposal) public proposals;
+    uint256 public proposalCount;
 
-    /// @dev 默认管理员角色（ID = 0x00）
-    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
+    event ProposalCreated(uint256 indexed id, address to, uint256 amount);
+    event ProposalApproved(uint256 indexed id, address approver);
+    event ProposalExecuted(uint256 indexed id);
 
-    /**
-     * @dev onlyRole 修饰符：要求调用者必须具备某个角色
-     */
-    modifier onlyRole(bytes32 role) {
-        _checkRole(role);
-        _;
+    constructor(address admin) {
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    /// @dev ERC165：接口支持声明
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override
-        returns (bool)
+    /**
+     * @dev 创建提案（仅 TREASURER_ROLE）
+     */
+    function createProposal(address to, uint256 amount)
+        external
+        onlyRole(TREASURER_ROLE)
+        returns (uint256)
     {
-        return interfaceId == type(IAccessControl).interfaceId
-            || super.supportsInterface(interfaceId);
+        uint256 id = proposalCount++;
+        proposals[id] = Proposal({
+            to: to,
+            amount: amount,
+            executed: false,
+            approvals: 0
+        });
+
+        emit ProposalCreated(id, to, amount);
+        return id;
     }
 
     /**
-     * @dev 查询某地址是否拥有某个角色
+     * @dev 审批提案（仅 AUDITOR_ROLE）
      */
-    function hasRole(bytes32 role, address account)
-        public
-        view
-        virtual
-        returns (bool)
-    {
-        return _roles[role].hasRole[account];
+    function approveProposal(uint256 id) external onlyRole(AUDITOR_ROLE) {
+        Proposal storage proposal = proposals[id];
+        require(!proposal.executed, "Already executed");
+
+        proposal.approvals++;
+        emit ProposalApproved(id, msg.sender);
     }
 
     /**
-     * @dev 检查 msg.sender 是否具备指定角色
+     * @dev 执行提案（仅 EXECUTOR_ROLE，需足够审批）
      */
-    function _checkRole(bytes32 role) internal view virtual {
-        _checkRole(role, _msgSender());
+    function executeProposal(uint256 id) external onlyRole(EXECUTOR_ROLE) {
+        Proposal storage proposal = proposals[id];
+
+        require(!proposal.executed, "Already executed");
+        require(proposal.approvals >= 2, "Insufficient approvals");
+        require(address(this).balance >= proposal.amount, "Insufficient balance");
+
+        proposal.executed = true;
+        payable(proposal.to).transfer(proposal.amount);
+
+        emit ProposalExecuted(id);
     }
 
     /**
-     * @dev 检查任意账户是否具备角色，不具备则 revert
+     * @dev 接收 ETH
      */
-    function _checkRole(bytes32 role, address account)
-        internal
-        view
-        virtual
-    {
-        if (!hasRole(role, account)) {
-            revert AccessControlUnauthorizedAccount(account, role);
-        }
-    }
-
-    /**
-     * @dev 获取“某角色”的管理员角色
-     *
-     * 默认：返回 0x00（DEFAULT_ADMIN_ROLE）
-     */
-    function getRoleAdmin(bytes32 role)
-        public
-        view
-        virtual
-        returns (bytes32)
-    {
-        return _roles[role].adminRole;
-    }
-
-    /**
-     * @dev 授予角色
-     *
-     * 要求：调用者必须拥有“该角色的管理员角色”
-     */
-    function grantRole(bytes32 role, address account)
-        public
-        virtual
-        onlyRole(getRoleAdmin(role))
-    {
-        _grantRole(role, account);
-    }
-
-    /**
-     * @dev 撤销角色
-     *
-     * 要求：调用者必须拥有该角色的管理员角色
-     */
-    function revokeRole(bytes32 role, address account)
-        public
-        virtual
-        onlyRole(getRoleAdmin(role))
-    {
-        _revokeRole(role, account);
-    }
-
-    /**
-     * @dev 自己放弃自己的某个角色
-     *
-     * 用于账户被盗、设备丢失等场景
-     */
-    function renounceRole(bytes32 role, address callerConfirmation)
-        public
-        virtual
-    {
-        if (callerConfirmation != _msgSender()) {
-            revert AccessControlBadConfirmation();
-        }
-
-        _revokeRole(role, callerConfirmation);
-    }
-
-    /**
-     * @dev 修改某角色的管理员角色
-     */
-    function _setRoleAdmin(bytes32 role, bytes32 adminRole)
-        internal
-        virtual
-    {
-        bytes32 previousAdminRole = getRoleAdmin(role);
-        _roles[role].adminRole = adminRole;
-        emit RoleAdminChanged(role, previousAdminRole, adminRole);
-    }
-
-    /**
-     * @dev 内部函数：授予角色（不做权限检查）
-     */
-    function _grantRole(bytes32 role, address account)
-        internal
-        virtual
-        returns (bool)
-    {
-        if (!hasRole(role, account)) {
-            _roles[role].hasRole[account] = true;
-            emit RoleGranted(role, account, _msgSender());
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * @dev 内部函数：撤销角色（不做权限检查）
-     */
-    function _revokeRole(bytes32 role, address account)
-        internal
-        virtual
-        returns (bool)
-    {
-        if (hasRole(role, account)) {
-            _roles[role].hasRole[account] = false;
-            emit RoleRevoked(role, account, _msgSender());
-            return true;
-        } else {
-            return false;
-        }
-    }
+    receive() external payable {}
 }
 ```
 
 :::
 
+### 核心API
+
+| 函数                                 | 说明                    | 权限要求              |
+| ---------------------------------- | --------------------- | ----------------- |
+| `hasRole(role, account)`           | 检查账户是否有角色             | 无                 |
+| `grantRole(role, account)`         | 授予角色                  | 角色的管理员            |
+| `revokeRole(role, account)`        | 撤销角色                  | 角色的管理员            |
+| `renounceRole(role, account)`      | 放弃自己的角色               | 调用者本人             |
+| `getRoleAdmin(role)`               | 查询角色的管理员角色            | 无                 |
+| `_setRoleAdmin(role, adminRole)`   | 设置角色的管理员（构造函数或内部使用）   | 内部调用              |
+| `_grantRole(role, account)`        | 内部授予（无权限检查）           | 内部调用              |
+| `_revokeRole(role, account)`       | 内部撤销（无权限检查）           | 内部调用              |
+| `onlyRole(role)` modifier          | 限制函数仅特定角色可调用          | -                 |
+
+### 高级模式：层级角色
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+
+/**
+ * @dev 层级权限系统
+ */
+contract HierarchicalAccess is AccessControl {
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant MODERATOR_ROLE = keccak256("MODERATOR_ROLE");
+    bytes32 public constant USER_ROLE = keccak256("USER_ROLE");
+
+    constructor(address superAdmin) {
+        // 超级管理员
+        _grantRole(DEFAULT_ADMIN_ROLE, superAdmin);
+
+        // 设置角色层级
+        _setRoleAdmin(ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(MODERATOR_ROLE, ADMIN_ROLE); // ADMIN 管理 MODERATOR
+        _setRoleAdmin(USER_ROLE, MODERATOR_ROLE);   // MODERATOR 管理 USER
+    }
+
+    /**
+     * @dev 超级管理员操作
+     */
+    function superAdminAction() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        // 最高权限操作
+    }
+
+    /**
+     * @dev 管理员操作
+     */
+    function adminAction() external onlyRole(ADMIN_ROLE) {
+        // 管理员操作
+    }
+
+    /**
+     * @dev 版主操作
+     */
+    function moderatorAction() external onlyRole(MODERATOR_ROLE) {
+        // 版主操作
+    }
+}
+```
+
 ## AccessControlEnumerable
 
-AccessControlEnumerable 是 AccessControl 的增强版本，增加了**链上角色成员枚举能力**，方便开发者在合约里直接查询某个角色的所有成员。
+**AccessControlEnumerable** 添加角色成员枚举功能。
 
 :::code-group
 
-```solidity [继承 AccessControlEnumerable]
+```solidity [白名单管理系统]
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import {AccessControlEnumerable} from "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 
-contract MyAccess is AccessControlEnumerable {
-    // 定义一个自定义角色
-    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+/**
+ * @dev NFT 白名单铸造
+ */
+contract WhitelistNFT is AccessControlEnumerable {
+    bytes32 public constant WHITELISTED_ROLE = keccak256("WHITELISTED_ROLE");
+
+    mapping(address => bool) public hasMinted;
 
     constructor(address admin) {
-        // 默认管理员角色
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
-        // 授予管理员角色 MANAGER_ROLE
-        _grantRole(MANAGER_ROLE, admin);
     }
 
-    // 仅 MANAGER_ROLE 可以调用
-    function restrictedFunction() public onlyRole(MANAGER_ROLE) {
-        // 权限功能逻辑
+    /**
+     * @dev 批量添加白名单
+     */
+    function addToWhitelist(address[] memory users) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        for (uint256 i = 0; i < users.length; i++) {
+            _grantRole(WHITELISTED_ROLE, users[i]);
+        }
     }
 
-    // 获取某个角色的成员数量
-    function getManagersCount() public view returns (uint256) {
-        return getRoleMemberCount(MANAGER_ROLE);
+    /**
+     * @dev 白名单铸造
+     */
+    function mint() external onlyRole(WHITELISTED_ROLE) {
+        require(!hasMinted[msg.sender], "Already minted");
+        hasMinted[msg.sender] = true;
+        // 铸造 NFT 逻辑
     }
 
-    // 获取某个角色的成员地址
-    function getManager(uint256 index) public view returns (address) {
-        return getRoleMember(MANAGER_ROLE, index);
+    /**
+     * @dev 获取白名单总数
+     */
+    function getWhitelistCount() external view returns (uint256) {
+        return getRoleMemberCount(WHITELISTED_ROLE);
     }
 
-    // 获取某个角色的所有成员
-    function getAllManagers() public view returns (address[] memory) {
-        return getRoleMembers(MANAGER_ROLE);
+    /**
+     * @dev 获取第 N 个白名单地址
+     */
+    function getWhitelistMember(uint256 index) external view returns (address) {
+        return getRoleMember(WHITELISTED_ROLE, index);
+    }
+
+    /**
+     * @dev 获取所有白名单地址（⚠️ Gas 密集）
+     */
+    function getAllWhitelisted() external view returns (address[] memory) {
+        return getRoleMembers(WHITELISTED_ROLE);
     }
 }
 ```
 
-```solidity [AccessControlEnumerable 源码]
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v5.5.0) (access/extensions/AccessControlEnumerable.sol)
-
-pragma solidity ^0.8.24;
-
-import {IAccessControlEnumerable} from "./IAccessControlEnumerable.sol";
-import {AccessControl} from "../AccessControl.sol";
-import {EnumerableSet} from "../../utils/structs/EnumerableSet.sol";
-import {IERC165} from "../../utils/introspection/ERC165.sol";
-
-/**
- * @dev AccessControl 的扩展，支持角色成员的枚举。
- */
-abstract contract AccessControlEnumerable is IAccessControlEnumerable, AccessControl {
-    using EnumerableSet for EnumerableSet.AddressSet;
-
-    // 每个角色对应的成员集合
-    mapping(bytes32 role => EnumerableSet.AddressSet) private _roleMembers;
-
-    /// @inheritdoc IERC165
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IAccessControlEnumerable).interfaceId || super.supportsInterface(interfaceId);
-    }
-
-    /**
-     * @dev 返回角色 role 的第 index 个成员
-     * index 范围：[0, getRoleMemberCount(role))
-     * 成员顺序无固定规律，可能随时变化
-     */
-    function getRoleMember(bytes32 role, uint256 index) public view virtual returns (address) {
-        return _roleMembers[role].at(index);
-    }
-
-    /**
-     * @dev 返回角色 role 的成员数量
-     * 可与 getRoleMember 一起使用来遍历角色所有成员
-     */
-    function getRoleMemberCount(bytes32 role) public view virtual returns (uint256) {
-        return _roleMembers[role].length();
-    }
-
-    /**
-     * @dev 返回角色 role 的所有成员（数组）
-     * 注意：复制整个集合到内存，可能消耗大量 gas，不适合在交易中调用
-     */
-    function getRoleMembers(bytes32 role) public view virtual returns (address[] memory) {
-        return _roleMembers[role].values();
-    }
-
-    /**
-     * @dev 重写 _grantRole，在授予角色时记录到可枚举集合
-     */
-    function _grantRole(bytes32 role, address account) internal virtual override returns (bool) {
-        bool granted = super._grantRole(role, account); // 调用父合约逻辑
-        if (granted) {
-            _roleMembers[role].add(account); // 加入可枚举集合
-        }
-        return granted;
-    }
-
-    /**
-     * @dev 重写 _revokeRole，在撤销角色时从可枚举集合移除
-     */
-    function _revokeRole(bytes32 role, address account) internal virtual override returns (bool) {
-        bool revoked = super._revokeRole(role, account); // 调用父合约逻辑
-        if (revoked) {
-            _roleMembers[role].remove(account); // 从可枚举集合移除
-        }
-        return revoked;
-    }
-}
-```
 :::
+
+## 最佳实践
+
+### 1. 选择合适的权限模式
+
+```solidity
+// ❌ 错误：简单合约使用复杂权限
+contract SimpleVault is AccessControl {
+    // 过度设计！只需 Ownable
+}
+
+// ✅ 正确：根据需求选择
+contract SimpleVault is Ownable {
+    // 简单合约用 Ownable
+}
+
+contract ComplexDeFi is AccessControl {
+    // 复杂系统用 AccessControl
+}
+```
+
+### 2. 保护 DEFAULT_ADMIN_ROLE
+
+```solidity
+// ❌ 危险：直接授予用户最高权限
+constructor() {
+    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+}
+
+// ✅ 推荐：使用多签钱包
+constructor(address multisig) {
+    require(multisig != address(0), "Invalid multisig");
+    _grantRole(DEFAULT_ADMIN_ROLE, multisig); // Gnosis Safe 等
+}
+```
+
+### 3. 角色粒度设计
+
+```solidity
+// ❌ 权限过于粗糙
+bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+// ADMIN 可以做所有事
+
+// ✅ 细粒度权限
+bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
+bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
+bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
+bytes32 public constant UPGRADE_ROLE = keccak256("UPGRADE_ROLE");
+```
+
+### 4. 紧急情况处理
+
+```solidity
+contract EmergencyProtocol is AccessControl {
+    bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
+    bool public emergencyShutdown;
+
+    /**
+     * @dev 紧急关闭（限时权限）
+     */
+    function triggerEmergency() external onlyRole(GUARDIAN_ROLE) {
+        emergencyShutdown = true;
+        // 24 小时后自动解除
+    }
+
+    /**
+     * @dev 通过治理恢复
+     */
+    function resolveEmergency() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emergencyShutdown = false;
+    }
+}
+```
+
+### 5. 事件监控
+
+```solidity
+contract AuditedAccess is AccessControl {
+    event CriticalOperation(address indexed operator, string action);
+
+    function criticalAction() external onlyRole(ADMIN_ROLE) {
+        emit CriticalOperation(msg.sender, "critical_action_executed");
+        // 关键操作
+    }
+}
+```
+
+## 常见陷阱与安全建议
+
+### 1. 权限丢失
+
+```solidity
+// ❌ 致命错误：永久失去控制权
+function dangerousRenounce() external onlyOwner {
+    renounceOwnership(); // 🔥 合约永久锁定
+}
+
+// ✅ 安全做法：多签 + 时间锁
+contract SafeProtocol is Ownable2Step {
+    address public immutable timelock;
+
+    constructor(address _timelock) Ownable(msg.sender) {
+        timelock = _timelock;
+    }
+
+    // 重要操作需要 timelock
+    modifier onlyTimelock() {
+        require(msg.sender == timelock, "Not timelock");
+        _;
+    }
+}
+```
+
+### 2. 角色冲突
+
+```solidity
+// ❌ 角色设计冲突
+bytes32 public constant ROLE_A = keccak256("ROLE");
+bytes32 public constant ROLE_B = keccak256("ROLE"); // 🔥 相同哈希！
+
+// ✅ 清晰命名
+bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+```
+
+### 3. 前端权限检查
+
+```typescript
+// ✅ 前端检查（提升 UX）
+const hasRole = await contract.hasRole(MINTER_ROLE, userAddress);
+if (!hasRole) {
+  alert("You don't have permission to mint");
+  return;
+}
+
+// ✅ 链上强制检查（安全）
+await contract.mint(amount); // onlyRole(MINTER_ROLE)
+```
+
+## 常见问题 FAQ
+
+### Q1: 如何实现多签控制？
+
+**A:** 使用 Gnosis Safe 配合 Ownable/AccessControl
+
+```typescript
+// 部署时将 owner 设为 Gnosis Safe 地址
+const safe = "0x..."; // Gnosis Safe 地址
+const contract = await Contract.deploy(safe);
+```
+
+### Q2: 如何升级权限系统？
+
+**A:** 使用可升级代理（UUPS）
+
+```solidity
+contract UpgradeableAccess is AccessControl, UUPSUpgradeable {
+    function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+}
+```
+
+### Q3: AccessControl vs Ownable 哪个更省 Gas？
+
+**A:**
+
+| 操作         | Ownable | AccessControl |
+| ---------- | ------- | ------------- |
+| 部署成本       | ~50k    | ~150k         |
+| 权限检查（读取）   | ~2k     | ~5k           |
+| 适用场景       | 简单合约    | 复杂系统          |
