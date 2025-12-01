@@ -178,23 +178,23 @@ export function getSidebar(): Record<string, SidebarItem[]> {
       // ============ 基础章节 ============
       {
         text: '起源',
-        link: '/guide/overview'
+        link: '/guide/01_overview'
       },
       {
         text: '区块链原理',
-        link: '/guide/basics/blockchain-principles'
+        link: '/guide/02_basics/01_blockchain-principles'
       },
       {
         text: '密码学',
-        link: '/guide/basics/cryptography'
+        link: '/guide/02_basics/02_cryptography'
       },
       {
         text: '分布式系统',
-        link: '/guide/basics/distributed-systems'
+        link: '/guide/02_basics/03_distributed-systems'
       },
       {
         text: 'IPFS',
-        link: '/guide/ipfs'
+        link: '/guide/03_ipfs'
       },
 
       // ============ 公链章节（完全自动扫描）============
