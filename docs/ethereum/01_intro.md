@@ -1,9 +1,9 @@
 ---
-title: Ethereum 公链概览
+title: 公链概述
 description: 介绍 Ethereum 公链的基本概念、特点、历史、共识机制及应用场景
 ---
 
-# Ethereum 公链概览
+# 公链概述
 
 ## 什么是 Ethereum？
 
