@@ -1,4 +1,4 @@
-# Transaction（交易）
+# Transaction
 
 Transaction 是 VeChain 区块链上的基本操作单元。本文档详细介绍如何创建、签名和发送交易。
 
@@ -37,7 +37,7 @@ interface TransactionBody {
 | `chainTag`     | `number`                  | 网络标识。主网 `0x4a`,测试网 `0xf6`                          |
 | `blockRef`     | `string`                  | 最近区块哈希的前 8 字节,用于确定交易的有效性                 |
 | `expiration`   | `number`                  | 交易过期时间,单位为区块数。推荐 32（约 5 分钟）              |
-| `clauses`      | `TransactionClause[]`     | 要执行的操作列表,详见 [Clause 文档](clause.md)            |
+| `clauses`      | `TransactionClause[]`     | 要执行的操作列表,详见 [Clause 文档](02_clause.md)            |
 | `gasPriceCoef` | `number`                  | Gas 价格系数,范围 0-255。0 表示使用基础 Gas 价格             |
 | `gas`          | `number \| string`        | Gas 限制,超过此值交易失败                                    |
 | `dependsOn`    | `string \| null`          | 依赖的交易 ID。如果设置,则此交易必须在依赖交易之后执行       |
@@ -644,19 +644,3 @@ const signedTx = Transaction.of(txBody).signAsSenderAndGasPayer(
   gasPayerKey
 );
 ```
-
-## 总结
-
-Transaction 是 VeChain 区块链操作的核心,掌握交易的创建、签名和管理对于开发 DApp 至关重要。
-
-**关键要点:**
-- 使用 `buildTransactionBody` 简化交易构建
-- 务必估算 Gas 并添加安全边际
-- 利用代付功能降低用户门槛
-- 使用批量 Clause 提高效率
-- 正确处理交易错误和回滚
-
-**推荐阅读:**
-- [Clause 文档](clause.md) - 了解交易子句
-- [ThorClient 文档](thor-client.md) - 了解客户端 API
-- [Address 和 HexUInt 文档](utils.md) - 了解工具类

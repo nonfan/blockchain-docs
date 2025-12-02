@@ -1,4 +1,4 @@
-# Clause（交易子句）
+# Clause
 
 Clause 是 VeChain 交易的基本组成单元。一个交易可以包含多个 Clause,每个 Clause 代表一个操作,比如转账、调用合约函数等。这种设计让 VeChain 支持在单个交易中执行多个操作,大大提高了效率。
 
@@ -433,19 +433,3 @@ const clauses = [
 
 // 原子性保证:授权和交换要么都成功,要么都失败
 ```
-
-## 总结
-
-Clause 是 VeChain 交易的核心组成部分,掌握 Clause 的使用是开发 VeChain 应用的基础。
-
-**关键要点:**
-- 一个交易可以包含多个 Clause
-- 所有 Clause 具有原子性
-- 使用 SDK 提供的辅助函数简化开发
-- 批量操作可以显著降低 Gas 费用
-- 合约调用需要正确编码函数数据
-
-**推荐阅读:**
-- [Transaction 文档](transaction.md) - 了解如何构建和发送交易
-- [ThorClient 文档](thor-client.md) - 了解如何与区块链交互
-- [Contract 文档](contract.md) - 了解合约交互的高级用法

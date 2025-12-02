@@ -1,4 +1,4 @@
-# 合约交互（Contract）
+# 合约交互
 
 本文档详细介绍如何使用 VeChain SDK 与智能合约进行交互,包括读取合约状态、调用合约函数、处理事件等。
 
@@ -886,24 +886,3 @@ async function getTokenInfo(address: string): Promise<TokenInfo> {
   // 实现...
 }
 ```
-
-## 总结
-
-合约交互是 DApp 开发的核心,掌握以下要点:
-
-**关键知识:**
-- ABI 定义了合约接口
-- 读取操作不需要 Gas,写入操作需要
-- 使用 `abi` 工具进行编码和解码
-- 事件用于监听合约状态变化
-
-**推荐实践:**
-- 封装常用合约为类
-- 批量操作节省 Gas
-- 正确处理错误和回滚
-- 使用类型安全的接口
-
-**推荐阅读:**
-- [Clause 文档](clause.md) - 了解交易子句
-- [Transaction 文档](transaction.md) - 了解交易构建
-- [ThorClient 文档](thor-client.md) - 了解客户端 API

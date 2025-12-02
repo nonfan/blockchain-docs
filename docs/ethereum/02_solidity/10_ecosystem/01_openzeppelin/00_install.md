@@ -584,30 +584,3 @@ ls lib/openzeppelin-contracts/contracts/
 # 查看特定文件
 cat lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol
 ```
-
-## 下一步
-
-安装完成后，你可以：
-
-1. 📖 **学习核心模块**：
-   - [Utils - 工具库](./01_utils.md)
-   - [Access - 权限控制](./02_access.md)
-   - [Token - 代币标准](./03_token.md)
-
-2. 🚀 **构建第一个合约**：
-   ```solidity
-   import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-   contract MyFirstToken is ERC20 {
-       constructor() ERC20("My First Token", "MFT") {
-           _mint(msg.sender, 1_000_000 * 10**18);
-       }
-   }
-   ```
-
-3. 🔐 **了解安全最佳实践**：
-   - [Security - 安全工具](./06_security.md)
-   - [Proxy - 可升级合约](./04_proxy.md)
-
-4. 🏛️ **探索高级功能**：
-   - [Governance - DAO 治理](./05_governance.md)

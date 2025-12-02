@@ -6,9 +6,9 @@
 > 本章通过**手写代码**帮助你理解代币标准的工作原理。
 >
 > 学习完本章后，建议继续学习：
-> - 📘 [OpenZeppelin Token](./ecosystem/openzeppelin/03_token.md) - 生产级代币开发
-> - 🔐 [OpenZeppelin Security](./ecosystem/openzeppelin/06_security.md) - 代币安全最佳实践
-> - 🔄 [OpenZeppelin Proxy](./ecosystem/openzeppelin/04_proxy.md) - 可升级合约详解
+> - 📘 [OpenZeppelin Token](./10_ecosystem/01_openzeppelin/03_token.md) - 生产级代币开发
+> - 🔐 [OpenZeppelin Security](./10_ecosystem/01_openzeppelin/06_security.md) - 代币安全最佳实践
+> - 🔄 [OpenZeppelin Proxy](./10_ecosystem/01_openzeppelin/04_proxy.md) - 可升级合约详解
 
 ## 为什么需要代币标准？
 
@@ -261,9 +261,9 @@ uint256 amount = 1.5 * 10**6 = 1500000
 
 理解了 ERC20 的工作原理后，实际开发中推荐使用：
 
-- 📘 [OpenZeppelin ERC20](./ecosystem/openzeppelin/03_token.md#erc20-详解) - 9 种扩展（Burnable、Pausable、Snapshot、Permit、Votes 等）
-- 🔐 [安全工具](./ecosystem/openzeppelin/06_security.md) - ReentrancyGuard、PullPayment
-- 🧪 [测试指南](./ecosystem/testing.md) - 如何测试代币合约
+- 📘 [OpenZeppelin ERC20](./10_ecosystem/01_openzeppelin/03_token.md#erc20-详解) - 9 种扩展（Burnable、Pausable、Snapshot、Permit、Votes 等）
+- 🔐 [安全工具](./10_ecosystem/01_openzeppelin/06_security.md) - ReentrancyGuard、PullPayment
+- 🧪 [测试指南](./10_ecosystem/03_testing.md) - 如何测试代币合约
 
 ## ERC721 - 非同质化代币标准（NFT）
 
@@ -562,9 +562,9 @@ nft.safeTransferFrom(alice, contractAddress, tokenId);
 
 理解了 ERC721 的工作原理后，实际开发中推荐使用：
 
-- 📘 [OpenZeppelin ERC721](./ecosystem/openzeppelin/03_token.md#erc721-详解) - 8 种扩展（URIStorage、Enumerable、Royalty 等）
-- 🎨 [NFT Metadata 设计](./ecosystem/openzeppelin/03_token.md#nft-metadata-最佳实践)
-- 🔐 [安全最佳实践](./ecosystem/openzeppelin/06_security.md)
+- 📘 [OpenZeppelin ERC721](./10_ecosystem/01_openzeppelin/03_token.md#erc721-详解) - 8 种扩展（URIStorage、Enumerable、Royalty 等）
+- 🎨 [NFT Metadata 设计](./10_ecosystem/01_openzeppelin/03_token.md#nft-metadata-最佳实践)
+- 🔐 [安全最佳实践](./10_ecosystem/01_openzeppelin/06_security.md)
 
 ## 其他代币标准
 
@@ -579,7 +579,7 @@ ERC1155 是一种**多代币标准**，一个合约可以管理多种代币（�
 
 **适用场景：** 游戏道具、票券、多资产管理
 
-**详细教程：** [OpenZeppelin ERC1155](./ecosystem/openzeppelin/03_token.md#erc1155-详解)
+**详细教程：** [OpenZeppelin ERC1155](./10_ecosystem/01_openzeppelin/03_token.md#erc1155-详解)
 
 ## 常见业务合约
 
@@ -800,4 +800,4 @@ graph LR
 | **Transparent Proxy** | 代理区分管理员和用户调用 | ✅ 成熟稳定 |
 | **Beacon Proxy** | 多个代理共享一个逻辑合约 | ⚠️ 特殊场景 |
 
-**详细教程：** [OpenZeppelin Proxy](./ecosystem/openzeppelin/04_proxy.md)
+**详细教程：** [OpenZeppelin Proxy](./10_ecosystem/01_openzeppelin/04_proxy.md)

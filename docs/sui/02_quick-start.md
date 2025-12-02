@@ -755,11 +755,11 @@ sui move build --verbose
 
 恭喜！你已经完成了 Sui 开发环境的搭建。
 
-👉 [Move 语言基础](./move/01_basic) - 学习 Move 的语法和类型系统
+👉 [Move 语言基础](./03_move/01_basic) - 学习 Move 的语法和类型系统
 
-👉 [对象模型](./move/02_object) - 深入理解 Sui 的核心概念
+👉 [对象模型](./03_move/02_object) - 深入理解 Sui 的核心概念
 
-👉 [能力系统](./move/03_capability) - 掌握高级设计模式
+👉 [能力系统](./03_move/03_capability) - 掌握高级设计模式
 
 ## 参考资源
 

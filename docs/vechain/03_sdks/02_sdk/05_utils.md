@@ -1,4 +1,4 @@
-# 工具类（Address, HexUInt, Hex）
+# 工具类
 
 VeChain SDK 提供了一系列工具类来处理区块链开发中常见的数据类型。本文档介绍最常用的几个工具类。
 
@@ -607,25 +607,3 @@ function processAddress(addr: string) {
   const clause = { to: addr, value: '0', data: '0x' };
 }
 ```
-
-## 总结
-
-VeChain SDK 提供的工具类简化了区块链开发中的常见任务:
-
-**核心工具类:**
-- `Address` - 地址验证和格式化
-- `HexUInt` - 十六进制数据处理
-- `VET/VTHO` - 代币金额处理
-- `ThorId` - 哈希和 ID 处理
-- `Hex` - 通用十六进制工具
-
-**使用建议:**
-- 始终使用工具类进行数据验证
-- 使用校验和地址格式
-- 私钥处理时注意安全
-- 金额计算使用 VET/VTHO 类避免精度问题
-
-**推荐阅读:**
-- [Clause 文档](clause.md) - 了解交易子句
-- [Transaction 文档](transaction.md) - 了解交易构建
-- [ThorClient 文档](thor-client.md) - 了解客户端 API

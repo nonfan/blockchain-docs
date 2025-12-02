@@ -744,26 +744,3 @@ class CachedThorClient {
 }
 ```
 
-## 总结
-
-ThorClient 是与 VeChain 区块链交互的核心工具。
-
-**关键模块:**
-- `accounts` - 账户查询
-- `blocks` - 区块数据
-- `logs` - 事件日志
-- `transactions` - 交易管理
-- `contracts` - 合约调用
-- `gas` - Gas 估算
-
-**重要功能:**
-- 支持轮询模式监听新区块
-- 提供代付功能降低用户门槛
-- 批量操作提高效率
-- 完整的交易生命周期管理
-
-**推荐阅读:**
-- [Clause 文档](clause.md) - 了解交易子句
-- [Transaction 文档](transaction.md) - 了解交易构建
-- [Contract 文档](contract.md) - 了解合约交互
-- [Wallet 文档](wallet.md) - 了解钱包管理
