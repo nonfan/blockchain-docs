@@ -54,7 +54,18 @@ sudo mv sui /usr/local/bin/
 sui --version
 ```
 
-```bash [使用 Cargo]
+```bash [Chocolately]
+# Window包管理器安装：管理员模式运行 PowerShell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# 安装 Sui
+choco install sui
+
+# 验证安装
+sui --version
+```
+
+```bash [Cargo]
 # 安装 Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
