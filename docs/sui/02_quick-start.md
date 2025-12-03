@@ -55,10 +55,10 @@ sui --version
 ```
 
 ```bash [Chocolately]
-# Window包管理器安装：管理员模式运行 PowerShell
+# Window包管理器安装：管理员权限运行 PowerShell
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
-# 安装 Sui
+# 管理员权限运行 PowerShell:安装 Sui
 choco install sui
 
 # 验证安装
@@ -178,7 +178,7 @@ module hello_sui::hello {
     use sui::tx_context::{Self, TxContext};
 
     /// Hello World 对象
-    struct HelloWorld has key {
+    public struct HelloWorld has key {
         id: UID,
         message: string::String
     }

@@ -117,6 +117,15 @@
 /**
  * Component: Algolia
  * -------------------------------------------------------------------------- */
+:root {
+    --warning-strong-color: #d4a200;
+    --danger-strong-color: #d62839;
+}
+.dark {
+    --warning-strong-color: #ffb703;
+    --danger-strong-color: #ff4d6d;
+}
+
 
 .DocSearch {
     --docsearch-primary-color: var(--vp-c-brand-1) !important;
@@ -125,6 +134,15 @@
 strong {
     color: var(--vp-code-color);
 }
+
+.warning strong {
+    color: var(--warning-strong-color);
+}
+
+.danger strong {
+    color: var(--danger-strong-color);
+}
+
 
 .flex {
     display: flex;

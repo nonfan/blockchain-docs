@@ -1,4 +1,4 @@
-# Move 语言基础
+# 语言基础
 
 > Move 的基础语法、类型系统和模块结构
 
@@ -28,6 +28,14 @@
 | **内存管理** | 自动 | 手动（所有权） | 自动（GC） |
 | **泛型** | ✅ 支持 | ✅ 支持 | ❌ 不支持 |
 | **并发** | ❌ 不支持 | ✅ 支持 | ❌ 不支持 |
+
+> [!IMPORTANT] Move 和 Rust 为什么高度相似？
+> Move 的设计者就是 Rust 的忠实拥趸，所以 Move 采用了类似 Rust 的：
+> - 花括号结构 `{}`
+> - 所有权和借用类似
+> - trait-like 的能力（abilities）
+> - 类型写法类似：`vector<T>`
+> - 模块系统类似：`use ...;`
 
 ## 基本语法
 
@@ -81,6 +89,8 @@ module my_package::example {
 
 ### 基本类型
 
+Move 的基本类型：布尔类型、整数类型（无符号）、地址类型。
+
 ```move
 module example::types {
     fun primitives() {
@@ -104,7 +114,12 @@ module example::types {
 }
 ```
 
+> [!WARNING] 为什么 Move 不支持有符号整数？
+> Move 的设计目标是 安全、可验证、不允许危险操作。有符号整数会带来很多不可控风险：**溢出边界难以验证**、**负数在区块链世界本身意义不大**、**减少攻击面与 Bug 概率**。
+
 ### 类型转换
+
+Move 只允许无符号整数之间明确转换，没有隐式转换：
 
 ```move
 fun type_casting() {
@@ -142,7 +157,7 @@ module example::vectors {
         let len = vector::length(&v);  // 2
 
         // 删除元素
-        let last = vector::pop_back(&mut v);  // 20
+        let last = vector::pop_back(&mut v);  // 移除并返回最后一个元素：20
 
         // 销毁向量
         vector::destroy_empty(v);
@@ -151,6 +166,17 @@ module example::vectors {
     // 向量字面量
     fun vector_literal() {
         let v = vector[1, 2, 3, 4, 5];
+    }
+
+    // 遍历向量
+    fun vector_list() {
+        let v = vector[1,2,3];
+        let len = vector::length(&v);
+        let mut i = 0;
+        while i < len {
+            let val = *vector::borrow(&v, i);
+            i += 1;
+        }
     }
 }
 ```
@@ -219,7 +245,7 @@ module example::abilities {
 }
 ```
 
-**能力说明：**
+**Move 的能力共有 4 种（Sui/Move 2024）：**
 
 | 能力 | 说明 | 示例 |
 |------|------|------|
@@ -227,6 +253,8 @@ module example::abilities {
 | `drop` | 可以丢弃 | 临时计算结果 |
 | `store` | 可以存储在结构体或全局存储中 | 嵌套对象 |
 | `key` | 可以作为全局存储的键 | 顶层 Sui 对象 |
+
+> 结构体如果没有显式声明能力，默认是不可复制、可丢弃（只拥有 drop）, 对于链上对象类型，一般至少需要 `key + store`
 
 ### 创建和使用结构体
 
@@ -315,6 +343,39 @@ module example::visibility {
     public entry fun transaction_entry() {}
 }
 ```
+
+### 交易入口函数
+
+在 Sui Move 中，通过 entry 函数修饰的函数 (交易入口函数)，专门用于在链上发起交易的函数。允许外部用户通过交易调用 Move 模块函数，修改链上对象。
+
+- 必须是 `public entry`
+- 可以接收 `signer` 引用，表示调用者
+- 可以修改拥有 `key` 能力的对象
+
+```solidity 
+module my_module {
+    use sui::object::{UID};
+    use sui::transfer;
+    use sui::tx_context::TxContext;
+    use sui::signer;
+
+    struct MyCoin has key {
+        id: UID,
+        value: u64,
+    }
+
+    // 交易入口函数
+    public entry fun mint_coin(owner: &signer, amount: u64, ctx: &mut TxContext) {
+        let coin = MyCoin {
+            id: object::new(ctx),
+            value: amount,
+        };
+        // 转移给调用者
+        transfer::transfer(coin, signer::address(owner));
+    }
+}
+```
+
 
 ## 表达式和控制流
 
