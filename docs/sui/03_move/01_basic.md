@@ -463,6 +463,10 @@ fun pattern_matching() {
 
 ## 所有权和借用
 
+在 Move 中，变量拥有对象，非 `copy` 类型赋值或传参会移动所有权，而通过 `&` 和 `&mut` 可以创建不可变或可变借用而不转移所有权。
+
+> Move 的基本类型都是 `copy` 类型，所以它们赋值或传参不会移动所有权。
+
 ### 所有权规则
 
 ```move
@@ -523,6 +527,14 @@ module example::borrowing {
 
 ### UID 和对象
 
+在 Sui 中，链上资产都以对象（Object）的形式存在，而不是单纯的值。
+
+对象是链上存储的实体，可以被拥有、转移、修改, 具有如下特征：
+
+- 每个对象都有唯一标识符 `UID`
+- 对象必须有能力 `has key`，才能在链上被引用或转移
+- 对象可以包含数据字段（如 `struct` 字段）
+
 ```move
 module example::sui_objects {
     use sui::object::{Self, UID};
@@ -550,25 +562,52 @@ module example::sui_objects {
 
 ### TxContext
 
+`TxContext` 是**每一次交易自动注入**的特殊对象，负责提供交易元数据给你的 Move 合约。
+
+TxContext 的作用（最重要的 4 个）:
+
+- 生成全局唯一的 `UID`
+- 获取交易发送者（signer）
+- 记录 gas 信息
+- 维护本次交易的内部事件和对象变更
+
 ```move
 module example::tx_context_usage {
     use sui::tx_context::{Self, TxContext};
+    use sui::object::{Self, UID};
+    use sui::event;
+    use std::string::String;
+
+    /// 自定义事件
+    struct MyEvent has copy, drop {
+        message: String,
+    }
 
     public entry fun example(ctx: &mut TxContext) {
-        // 获取发送者地址
+        // 1. 创建对象 UID（Sui 对象必须有 UID）
+        let uid: UID = object::new(ctx);
+
+        // 2. 获取交易发送者（signer）
         let sender = tx_context::sender(ctx);
 
-        // 获取交易摘要
-        let digest = tx_context::digest(ctx);
+        // 3. 获取本次交易的 Gas 支付者
+        let payer = tx_context::gas_payer(ctx);
 
-        // 获取 epoch
+        // 4. 获取 epoch（当前 Sui 网络的 epoch 号）
         let epoch = tx_context::epoch(ctx);
 
-        // 生成新的 UID
-        let uid = object::new(ctx);
+        // 5. 获取交易 digest（全局唯一标识交易的哈希）
+        let digest = tx_context::digest(ctx);
+
+        // 6. 发送一个事件
+        event::emit(ctx, MyEvent {
+            message: String::utf8(b"TxContext 示例完成")
+        });
     }
 }
 ```
+
+> TxContext 是 Sui 为每笔交易注入的唯一、不可复制的上下文对象，用来生成 UID、获取交易发送者、处理 gas 和记录事件，是所有对象创建与权限验证的核心
 
 ## 泛型
 
@@ -601,6 +640,27 @@ module example::generics {
 
 ### Phantom 类型参数
 
+> Phantom 是零成本的类型标签，用来在编译期区分资源类型，而不会出现在链上，既安全又省 gas。
+
+在 Sui 中，很多资源的结构体内容是一样的，但它们代表的含义不同，例如：
+
+- SUI 代币
+- USDT 代币
+- 自己游戏里的 Gold、Gem
+- Kiosk 中不同种类商品的 Key
+
+默认情况下，你可能考虑给这个相同的结构体，添加一个 symbol 字段来区分，如
+
+```move
+struct Coin {
+    id: UID,
+    value: u64,
+    symbol: String, // "SUI" / "USDT"
+}
+```
+
+这样会出现问题：链上存储变大、成本变高、易伪造（symbol）、类型不安全。因此 Sui 选择用类型（phantom）代替字段。如下使用示例：
+
 ```move
 module example::phantom {
     // Phantom 类型参数不影响结构体的能力
@@ -621,6 +681,10 @@ module example::phantom {
     }
 }
 ```
+
+Phantom 就像你物品上的“标签”，告诉别人这是鞋子、这是衣服；但标签不会跟你一起被装进箱子里。
+
+Phantom 用于区分不同类型资源，只在编译期存在，不参与运行或存储，不额外占字节，不增加 gas 成本。
 
 ## 常量
 
@@ -667,53 +731,68 @@ module example::errors {
 
 ### 单元测试
 
+在 Sui Move / Move 语言里，单元测试有两种写法，都可以，但各有优缺点：
+
+**跟模块文件放在一起:**
+
+- 测试代码紧邻模块，方便修改和维护
+- 单元测试可以直接访问模块的私有函数（非 public）
+- 编译器自动关联模块与测试
+
 ```move
-module example::counter {
-    struct Counter has key {
-        id: UID,
-        value: u64
+module hello::hello {
+    const EInvalidValue: u64 = 0;
+
+    public fun say_hello(): vector<u8> {
+        b"Hello, Move!"
     }
 
-    public fun increment(counter: &mut Counter) {
-        counter.value = counter.value + 1;
+    fun validate(value: u64) {
+        // 条件失败时中止执行
+        assert!(value > 0, EInvalidValue);
+        assert!(value < 1000, EInvalidValue);
     }
 
     #[test]
-    fun test_increment() {
-        use sui::test_scenario;
-
-        let admin = @0xAD;
-        let mut scenario = test_scenario::begin(admin);
-
-        // 创建计数器
-        {
-            let ctx = test_scenario::ctx(&mut scenario);
-            let counter = Counter {
-                id: object::new(ctx),
-                value: 0
-            };
-            transfer::share_object(counter);
-        };
-
-        // 增加计数
-        test_scenario::next_tx(&mut scenario, admin);
-        {
-            let mut counter = test_scenario::take_shared<Counter>(&scenario);
-            increment(&mut counter);
-            assert!(counter.value == 1, 0);
-            test_scenario::return_shared(counter);
-        };
-
-        test_scenario::end(scenario);
+    fun test_validate() {
+        validate(10); // 有效值
     }
 
     #[test]
     #[expected_failure(abort_code = 0)]
-    fun test_failure() {
-        assert!(false, 0);
+    fun test_validate_invalid_low() {
+        // 故意写错，预期会失败， abort_code 错误代码值
+        validate(0); // 无效值，触发断言失败
     }
 }
 ```
+
+> `#[expected_failure(abort_code = 0)]` 是 Move 测试框架中的一个 测试标注（attribute），用于标记某个测试预期会失败，并且可以指定失败的原因。
+
+
+**单独放在 tests/ 文件夹：**
+
+- 测试和模块分离，模块代码更干净
+- 适合大型项目或多人协作
+- 可以模拟不同模块交互的场景
+
+:::code-group
+
+```move [tests/hello_test.move：]
+module hello::hello_test {
+    use hello::hello;
+
+    #[test]
+    fun test_say_hello() {
+        let message = hello::say_hello();
+        assert!(message == b"Hello, Move!", 1);
+    }
+}
+```
+
+
+
+:::
 
 ### 运行测试
 
@@ -729,59 +808,6 @@ sui move test --verbose
 
 # 代码覆盖率
 sui move test --coverage
-```
-
-## 完整示例：简单代币
-
-```move
-module example::simple_token {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
-    use sui::coin::{Self, TreasuryCap};
-
-    // 代币类型标记
-    struct SIMPLE_TOKEN has drop {}
-
-    // 一次性见证（One-Time Witness）
-    fun init(witness: SIMPLE_TOKEN, ctx: &mut TxContext) {
-        // 创建货币
-        let (treasury, metadata) = coin::create_currency(
-            witness,
-            9,                          // 小数位数
-            b"SIMPLE",                  // 符号
-            b"Simple Token",            // 名称
-            b"A simple example token",  // 描述
-            option::none(),             // 图标 URL
-            ctx
-        );
-
-        // 转移 treasury 给部署者
-        transfer::public_transfer(treasury, tx_context::sender(ctx));
-
-        // 冻结元数据
-        transfer::public_freeze_object(metadata);
-    }
-
-    // 铸造代币
-    public entry fun mint(
-        treasury: &mut TreasuryCap<SIMPLE_TOKEN>,
-        amount: u64,
-        recipient: address,
-        ctx: &mut TxContext
-    ) {
-        let coin = coin::mint(treasury, amount, ctx);
-        transfer::public_transfer(coin, recipient);
-    }
-
-    // 销毁代币
-    public entry fun burn(
-        treasury: &mut TreasuryCap<SIMPLE_TOKEN>,
-        coin: coin::Coin<SIMPLE_TOKEN>
-    ) {
-        coin::burn(treasury, coin);
-    }
-}
 ```
 
 ## 最佳实践
