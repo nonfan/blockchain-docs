@@ -172,3 +172,43 @@ img {
     margin: 0.15rem 0 0 0;
     /* 可调整大小/对齐 */
 }
+
+/* Mermaid 图表整体容器优化 */
+.mermaid {
+    margin: 1rem 0;
+}
+
+/* Mermaid SVG 自适应父容器宽度 */
+.mermaid svg {
+    display: block;
+    height: auto;
+    width: 100% !important;
+    max-width: 100%;
+}
+
+/* 节点阴影与圆角（尽量提升观感） */
+.mermaid svg .node rect,
+.mermaid svg .cluster rect,
+.mermaid svg .label rect {
+    rx: 8px;
+    ry: 8px;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.08));
+}
+
+/* 线条细化 */
+.mermaid svg .edgePath .path,
+.mermaid svg .flowchart-link {
+    stroke-width: 1.5px;
+}
+
+/* 箭头更清晰 */
+.mermaid svg .arrowheadPath {
+    stroke-width: 1.5px;
+}
+
+/* 深色模式下的额外对比优化 */
+.dark .mermaid svg .node rect,
+.dark .mermaid svg .cluster rect,
+.dark .mermaid svg .label rect {
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+}
