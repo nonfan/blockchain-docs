@@ -1,6 +1,6 @@
 # 入门
 
-> 从零开始搭建 Sui 开发环境并创建第一个应用
+> 从零开始搭建 Sui 开发环境并创建第一个应用，[官方入门教程](https://docs-zh.sui-book.com/guides/developer/getting-started) ✈
 
 > [!IMPORTANT] 本节重点
 > 1. 如何安装 Sui CLI？
@@ -135,6 +135,7 @@ sui client switch --env devnet
 
 ```bash
 # 从水龙头获取测试币（仅 devnet 和 testnet）
+# https://faucet.sui.io/?address=钱包地址
 sui client faucet
 
 # 查看余额
@@ -439,11 +440,15 @@ sui client object 0x1234...
 sui client dynamic-field 0x1234...
 
 # ========== 交易相关 ==========
-# 转账 SUI
-sui client transfer-sui \
-  --to 0xrecipient... \
-  --amount 1000000000 \
-  --gas-budget 10000000
+# 查询你钱包的代币ID
+sui client gas
+╭────────────────────────────────────────────────────────────────────┬────────────────────┬──────────────────╮
+│ gasCoinId                                                          │ mistBalance (MIST) │ suiBalance (SUI) │
+├────────────────────────────────────────────────────────────────────┼────────────────────┼──────────────────┤
+│ 0x9882571c340abec7c1a2b788e3cb42c9f8a351fb482a3240503bc7a45e92e4a7 │ 100000000          │ 0.10             │
+╰────────────────────────────────────────────────────────────────────┴────────────────────┴──────────────────╯
+# 转账
+sui client transfer-sui --to 0xrecipient... --amount 100000000 --gas-budget 100000000 --sui-coin-object-id gasCoinId
 
 # 转账对象
 sui client transfer \
@@ -690,15 +695,15 @@ code --install-extension damirka.move-syntax
 
 ### 区块浏览器
 
-- **Sui Explorer** - https://explorer.sui.io
-- **SuiScan** - https://suiscan.xyz
-- **SuiVision** - https://suivision.xyz
+- [Sui Explorer](https://explorer.sui.io)
+- [SuiScan](https://suiscan.xyz)
+- [SuiVision](https://suivision.xyz)
 
 ### 开发工具
 
-- **Sui Wallet** - 浏览器钱包扩展
-- **Sui DevNet Faucet** - https://discord.gg/sui
-- **Move Book** - https://move-book.com/
+- [Sui Wallet 浏览器钱包扩展](https://chromewebstore.google.com/detail/slush-%E2%80%94-a-sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil?hl=zh-CN&utm_source=ext_sidebar)
+- [Sui DevNet Faucet](https://faucet.sui.io/)
+- [Move Book](https://move-book.com/)
 
 ## 常见问题
 

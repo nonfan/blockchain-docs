@@ -85,7 +85,7 @@ module example::basic_object {
 
 Sui 支持四种对象所有权模式：
 
-### 1. 拥有对象（Owned Object）
+### 拥有对象（Owned Object）
 
 **单一所有者拥有的对象**
 
@@ -137,7 +137,7 @@ module example::owned {
 - ✅ 可并行处理
 - 🎯 **用途：NFT、个人资产**
 
-### 2. 共享对象（Shared Object）
+### 共享对象（Shared Object）
 
 **多人可访问的对象**
 
@@ -181,7 +181,7 @@ module example::shared {
 - ⚠️ 不可删除（一旦共享，永久共享）
 - 🎯 **用途：DeFi 池、市场、DAO**
 
-### 3. 不可变对象（Immutable Object）
+### 不可变对象（Immutable Object）
 
 **只读的对象**
 
@@ -226,7 +226,7 @@ module example::immutable {
 - ❌ 无法删除
 - 🎯 **用途：配置、元数据、常量**
 
-### 4. 包装对象（Wrapped Object）
+### 包装对象（Wrapped Object）
 
 **存储在其他对象内部的对象**
 
@@ -394,6 +394,9 @@ module example::deletion {
 
 ### UID 和 ID
 
+- `UID` 是 唯一标识符，它是 Sui 中用于标识一个对象的关键数据类型，并且它是不可变的。
+- `ID` 是一个更通用的术语，它通常指代一种标识符，但不像 `UID` 那样用于唯一标识 Sui 中的对象。
+
 ```move
 module example::object_ids {
     use sui::object::{Self, UID, ID};
@@ -421,6 +424,8 @@ module example::object_ids {
     }
 }
 ```
+
+> 这段代码主要的目的是进行不同标识符（UID、ID）和地址之间的转换。这种转换在 Sui 中非常有用，因为每个对象都有一个 UID，而 ID 和地址通常用于其他逻辑和操作（如账户操作或交易）。
 
 ### 对象查找
 
@@ -452,9 +457,30 @@ module example::lookup {
 
 ## 实战示例
 
+```bash [初始化项目]
+# 创建新项目
+sui move new example
+
+# 进入项目目录
+cd example
+
+# 编写 toml 配置
+[package]
+name = "example"
+version = "0.0.1"
+edition = "2024.beta"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet" }
+
+[addresses]
+example = "0x0"
+```
+
 ### 示例 1：简单 NFT
 
-```move
+:::code-group
+```move [编写示例 simple_nft.move]
 module example::simple_nft {
     use sui::object::{Self, UID};
     use sui::transfer;
@@ -512,9 +538,40 @@ module example::simple_nft {
 }
 ```
 
+```bash [部署]
+# 编译 Move 合约
+sui move build
+
+# 部署合约
+sui client publish --gas-budget 1000000000
+```
+
+```bash [调用合约]
+export PACKAGE_ID=???
+
+# 铸造 NFT
+sui client call --package $PACKAGE_ID \
+--module simple_nft \
+--function mint \
+--args "First" "我在SUI链发行的第一张NFT" "ipfs://QmWWADHszhNSN7VfC4ENnN7ApSnCVU885d3o1BhwvryRcS" --gas-budget 100000000
+
+# 转移 NFT
+sui client call --package $PACKAGE_ID \
+--module simple_nft \
+--function transfer_nft \
+--args "0x4e13" "0x3996" \
+--gas-budget 100000000
+
+# 链下读取NFT对象信息
+$ sui client object 0x4e13285830dee23aa6d451f91af4a8d8928f2bfe525eafac9d25a63ad7bdaaec --json
+```
+
+:::
 ### 示例 2：共享计数器
 
-```move
+:::code-group
+
+```move [编写示例 shared_counter.move]
 module example::shared_counter {
     use sui::object::{Self, UID};
     use sui::transfer;
@@ -555,6 +612,35 @@ module example::shared_counter {
     }
 }
 ```
+
+```bash [部署]
+# 编译 Move 合约
+sui move build
+
+# 部署合约
+sui client publish --gas-budget 1000000000
+```
+
+```bash [调用合约]
+export PACKAGE_ID=???
+
+# 任何人都可以创建计数器
+sui client call --package $PACKAGE_ID \
+--module shared_counter \
+--function create \
+--gas-budget 100000000
+
+# 增加计数：任意钱包
+sui client call --package $PACKAGE_ID \
+--module shared_counter \
+--function increment \
+--args OBJECT_ID \
+--gas-budget 10000000
+
+# 链下读取NFT对象信息
+$ sui client object OBJECT_ID --json
+```
+:::
 
 ### 示例 3：对象包装（质押）
 
@@ -684,7 +770,50 @@ module example::marketplace {
 
 ## 动态字段
 
-### 动态字段 vs 动态对象字段
+> Sui Move 中的「动态字段」（Dynamic Fields）是 Sui 最强大、最好用的特性之一，几乎所有中高级项目（NFT、游戏、DeFi、域名系统等）都离不开它。
+
+**动态字段到底是什么？**
+
+- 它相当于一个「链上 Map / 字典」，Key → Value 可以动态增删。
+- Key 和 Value 都可以是任意类型（只要满足 `store` 或 `key` 约束）。
+- 它们不写死在对象结构体里，所以可以无限扩展，不会因为字段太多导致对象太大。
+- 动态字段本身也是对象！它们有自己的 `object ID`，独立存在。
+
+**动态字段的两种类型（官方分类）**
+
+| 类型                  | 用途                                   | Key 必须满足 | Value 必须满足 | 典型场景                      |
+| --------------------- | -------------------------------------- | ------------ | --------------- | ----------------------------- |
+| 动态字段         | Value 有 `store`（可被别人拥有）        | key + store  | store           | NFT 属性、背包物品、用户数据 |
+| 动态对象字段 | Value 没有 `store`（只能父对象拥有）     | key + store  | key + store     | 游戏中的怪物、房间、内部状态 |
+
+**核心 API：**
+
+```move
+module example {
+    use sui::dynamic_field as df;
+    /**
+     * 伪代码演示
+     */
+     
+    // 添加/覆盖
+    df::add<KeyType, ValueType>(parent: &mut UID, key: KeyType, value: ValueType)
+
+    // 借用（不可变）
+    df::borrow<KeyType, ValueType>(parent: &UID, key: KeyType) -> &ValueType
+
+    // 借用（可变）
+    df::borrow_mut<KeyType, ValueType>(parent: &mut UID, key: KeyType) -> &mut ValueType
+
+    // 删除并拿回 value（value 必须有 drop 或你手动处理）
+    df::remove<KeyType, ValueType>(parent: &mut UID, key: KeyType) -> ValueType
+
+    // 判断是否存在
+    df::exists_<KeyType>(parent: &UID, key: KeyType) -> bool
+}
+
+```
+
+**动态字段 vs 动态对象字段**
 
 ```move
 module example::dynamic_fields {
@@ -731,7 +860,21 @@ module example::dynamic_fields {
 
 ## 对象权限设计模式
 
-### 模式 1：所有者检查
+在 Sui Move 中，权限设计一共有 7 大主流模式，从简单到高级，足以覆盖 99.9% 的真实项目需求。其中最常见、最核心的两种是：
+- 所有者检查（Owner Check）
+- 管理员凭证（AdminCap）
+
+> 这两者加起来占了全网合约的 80% 以上。
+
+### 所有者检查
+
+> 在 Sui 生态里，如果你只懂一个权限模式，那就必须是「所有者检查（Owner Check）」。
+> 
+>它简单、直接、gas 最低、审计最友好，几乎所有个人资产、NFT、游戏角色、装备、背包…… 都是用它来保护的。
+
+Sui 系统本身已经保证了 `transfer::transfer(obj, recipient)` 只能由 owner 调用。
+但很多时候我们还希望**提供自定义的 entry 函数**（比如升级装备、改名、喂食宠物），这时就需要手动检查调用者是不是 owner。
+
 
 ```move
 module example::owner_check {
@@ -753,10 +896,20 @@ module example::owner_check {
         assert!(item.owner == tx_context::sender(ctx), 0);
         item.value = new_value;
     }
+
+    public entry fun transfer(item: OwnedItem, to: address) {
+        transfer::transfer(item, to);
+    }
 }
 ```
 
-### 模式 2：管理员权限
+
+
+### 管理员凭证
+
+管理员凭证 AdminCap 是一个全局唯一、不可伪造、可以自由转移的对象，谁拥有它，谁就是管理员。
+
+所有协议级操作（调费率、紧急暂停、提取资金、升级合约）都写成 `_: &AdminCap` 第一个参数，行业标准，一看就过审。
 
 ```move
 module example::admin {
@@ -764,7 +917,7 @@ module example::admin {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
-    // 管理员凭证
+    // 管理员凭证 【推荐命名！！！】
     struct AdminCap has key {
         id: UID
     }
@@ -797,26 +950,38 @@ module example::admin {
 
 ## 最佳实践
 
-### 1. 选择合适的所有权模式
+### 选择合适的所有权模式
 
 ```move
-// ✅ 个人资产 -> 拥有对象
-struct NFT has key { id: UID }
+// 1. 个人资产
+public fun mint_nft(ctx: &mut TxContext) {
+    let nft = NFT { id: object::new(ctx) };
+    transfer::transfer(nft, tx_context::sender(ctx));   // 个人拥有
+}
 
-// ✅ 多人访问 -> 共享对象
-struct DEXPool has key { id: UID }
+// 2. 共享对象
+public fun create_pool(ctx: &mut TxContext) {
+    let pool = DEXPool { id: object::new(ctx) };
+    transfer::share_object(pool);                       // 所有人可用
+}
 
-// ✅ 只读配置 -> 不可变对象
-struct GameConfig has key { id: UID }
+// 3. 只读配置（部署时执行一次，永远不变）
+public fun publish_game_config(ctx: &mut TxContext) {
+    let config = GameConfig { id: object::new(ctx) };
+    transfer::freeze_object(config);                    // 永久冻结
+}
 
-// ✅ 组合资产 -> 包装对象
-struct StakeReceipt has key {
-    id: UID,
-    staked: Coin<SUI>  // 包装
+// 4. 组合资产（质押凭证）
+public fun stake(coin: Coin<SUI>, ctx: &mut TxContext) {
+    let receipt = StakeReceipt {
+        id: object::new(ctx),
+        staked: coin
+    };
+    transfer::transfer(receipt, tx_context::sender(ctx)); // 凭证归用户
 }
 ```
 
-### 2. 对象能力设计
+### 对象能力设计
 
 ```move
 // ✅ 顶层对象：key
@@ -829,7 +994,7 @@ struct Nested has key, store { id: UID }
 // 资产类型不要加 copy 或 drop
 ```
 
-### 3. 删除对象
+### 删除对象
 
 ```move
 // ✅ 正确的删除方式
@@ -863,7 +1028,7 @@ public entry fun wrong_delete(obj: MyObject) {
 
 ### Q3: 包装对象有什么限制？
 
-**A:**
+**A:** 限制条件
 - 被包装的对象必须有 `store` 能力
 - 包装后不可直接访问
 - 必须解包后才能转移或删除
@@ -888,10 +1053,3 @@ public entry fun soft_delete(item: &mut Item) {
     item.deleted = true;
 }
 ```
-
-## 参考资源
-
-- [Sui 对象模型官方文档](https://docs.sui.io/build/programming-with-objects)
-- [对象所有权文档](https://docs.sui.io/build/programming-with-objects/object-ownership)
-- [动态字段文档](https://docs.sui.io/build/programming-with-objects/dynamic-fields)
-- [Sui Framework 源码](https://github.com/MystenLabs/sui/tree/main/crates/sui-framework)
