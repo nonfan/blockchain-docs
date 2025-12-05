@@ -21,9 +21,9 @@
 
 | 网络      | 节点                                  | 水龙头                                 |
 |---------|-------------------------------------|-------------------------------------|
-| local   | `http://127.0.0.1:9000` default     | `http://127.0.0.1:9123/v2/gas`      |
-| Devnet  | `https://fullnode.devnet.sui.io:443` | `https://faucet.devnet.sui.io/gas`  |
-| Testnet | `https://fullnode.testnet.sui.io:443` | `https://faucet.testnet.sui.io/gas` |
+| local   | `http://127.0.0.1:9000` default     | `https://faucet.sui.io/`      |
+| Devnet  | `https://fullnode.devnet.sui.io:443` | `https://faucet.sui.io/` |
+| Testnet | `https://fullnode.testnet.sui.io:443` | `https://faucet.sui.io/` |
 | Mainnet | `https://fullnode.mainnet.sui.io:443` | `null`                              |
 
 > [!WARNING] 生产环境防范
