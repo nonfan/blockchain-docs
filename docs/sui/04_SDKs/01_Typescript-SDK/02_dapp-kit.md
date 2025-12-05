@@ -33,13 +33,13 @@
 
 ```bash
 # 使用 npm
-npm install @mysten/dapp-kit @mysten/sui.js @tanstack/react-query
+npm install @mysten/dapp-kit @mysten/sui @tanstack/react-query
 
 # 使用 yarn
-yarn add @mysten/dapp-kit @mysten/sui.js @tanstack/react-query
+yarn add @mysten/dapp-kit @mysten/sui @tanstack/react-query
 
 # 使用 pnpm
-pnpm add @mysten/dapp-kit @mysten/sui.js @tanstack/react-query
+pnpm add @mysten/dapp-kit @mysten/sui @tanstack/react-query
 ```
 
 ### 基础配置
@@ -48,7 +48,7 @@ pnpm add @mysten/dapp-kit @mysten/sui.js @tanstack/react-query
 
 ```typescript
 import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui.js/client';
+import { getFullnodeUrl } from '@mysten/sui/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@mysten/dapp-kit/dist/index.css';
 
@@ -367,28 +367,28 @@ function TransactionHistory() {
 ### 基础转账
 
 ```typescript
-import { TransactionBlock } from '@mysten/sui.js/transactions';
-import { useSignAndExecuteTransactionBlock, useCurrentAccount } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
+import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-kit';
 import { useState } from 'react';
 
 function Transfer() {
   const account = useCurrentAccount();
-  const { mutate: signAndExecute } = useSignAndExecuteTransactionBlock();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
 
   const handleTransfer = () => {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     const [coin] = tx.splitCoins(tx.gas, [
       tx.pure(BigInt(parseFloat(amount) * 1_000_000_000))
     ]);
 
-    tx.transferObjects([coin], tx.pure(recipient));
+    tx.transferObjects([coin], tx.pure.address(recipient));
 
     signAndExecute(
       {
-        transactionBlock: tx,
+        transaction: tx,
         options: {
           showEffects: true,
         },
@@ -434,14 +434,14 @@ function Transfer() {
 ### 调用智能合约
 
 ```typescript
-import { TransactionBlock } from '@mysten/sui.js/transactions';
-import { useSignAndExecuteTransactionBlock } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
+import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 
 function MintNFT({ packageId }: { packageId: string }) {
-  const { mutate: signAndExecute } = useSignAndExecuteTransactionBlock();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   const handleMint = (name: string, description: string, imageUrl: string) => {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     tx.moveCall({
       target: `${packageId}::nft::mint`,
@@ -454,7 +454,7 @@ function MintNFT({ packageId }: { packageId: string }) {
 
     signAndExecute(
       {
-        transactionBlock: tx,
+        transaction: tx,
         options: {
           showEffects: true,
           showObjectChanges: true,
@@ -491,23 +491,23 @@ function MintNFT({ packageId }: { packageId: string }) {
 ### 仅签名（不执行）
 
 ```typescript
-import { TransactionBlock } from '@mysten/sui.js/transactions';
-import { useSignTransactionBlock } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
+import { useSignTransaction } from '@mysten/dapp-kit';
 
 function SignOnly() {
-  const { mutateAsync: signTransaction } = useSignTransactionBlock();
+  const { mutateAsync: signTransaction } = useSignTransaction();
 
   const handleSign = async () => {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
     // ... 构建交易
 
     try {
-      const { signature, transactionBlockBytes } = await signTransaction({
-        transactionBlock: tx,
+      const { signature, bytes } = await signTransaction({
+        transaction: tx,
       });
 
       console.log('签名:', signature);
-      console.log('交易字节:', transactionBlockBytes);
+      console.log('交易字节:', bytes);
 
       // 可以将签名和交易发送给后端处理
     } catch (error) {
@@ -522,18 +522,18 @@ function SignOnly() {
 ### 带加载状态的交易
 
 ```typescript
-import { TransactionBlock } from '@mysten/sui.js/transactions';
-import { useSignAndExecuteTransactionBlock } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
+import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 
 function TransferWithLoading() {
-  const { mutate: signAndExecute, isPending } = useSignAndExecuteTransactionBlock();
+  const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction();
 
   const handleTransfer = () => {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
     // ... 构建交易
 
     signAndExecute(
-      { transactionBlock: tx },
+      { transaction: tx },
       {
         onSuccess: (result) => {
           console.log('成功:', result);
@@ -608,13 +608,13 @@ const {
 
 ```typescript
 // 签名并执行交易
-const { mutate: signAndExecute, isPending } = useSignAndExecuteTransactionBlock();
+const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction();
 
 // 仅签名
-const { mutateAsync: signTransaction } = useSignTransactionBlock();
+const { mutateAsync: signTransaction } = useSignTransaction();
 
 // 执行交易（使用已有签名）
-const { mutate: executeTransaction } = useExecuteTransactionBlock();
+const { mutate: executeTransaction } = useExecuteTransaction();
 ```
 
 ### 自定义 Hook 示例
@@ -673,15 +673,15 @@ import {
   ConnectButton,
   useCurrentAccount,
   useSuiClientQuery,
-  useSignAndExecuteTransactionBlock,
+  useSignAndExecuteTransaction,
 } from '@mysten/dapp-kit';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { Transaction } from '@mysten/sui/transactions';
 
 const PACKAGE_ID = '0x...';
 
 function NFTMarketplace() {
   const account = useCurrentAccount();
-  const { mutate: signAndExecute } = useSignAndExecuteTransactionBlock();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   // 查询市场上的 NFT
   const { data: marketNFTs, isLoading } = useSuiClientQuery('getOwnedObjects', {
@@ -714,7 +714,7 @@ function NFTMarketplace() {
 
   // 铸造 NFT
   const handleMint = () => {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     tx.moveCall({
       target: `${PACKAGE_ID}::nft::mint`,
@@ -726,7 +726,7 @@ function NFTMarketplace() {
     });
 
     signAndExecute(
-      { transactionBlock: tx },
+      { transaction: tx },
       {
         onSuccess: () => alert('NFT 铸造成功!'),
         onError: (error) => alert(`失败: ${error.message}`),
@@ -736,7 +736,7 @@ function NFTMarketplace() {
 
   // 上架 NFT
   const handleList = (nftId: string, price: string) => {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     tx.moveCall({
       target: `${PACKAGE_ID}::marketplace::list`,
@@ -747,7 +747,7 @@ function NFTMarketplace() {
     });
 
     signAndExecute(
-      { transactionBlock: tx },
+      { transaction: tx },
       {
         onSuccess: () => alert('NFT 上架成功!'),
       }
@@ -756,7 +756,7 @@ function NFTMarketplace() {
 
   // 购买 NFT
   const handleBuy = (listingId: string, price: string) => {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     const [coin] = tx.splitCoins(tx.gas, [
       tx.pure(BigInt(parseFloat(price) * 1_000_000_000))
@@ -771,7 +771,7 @@ function NFTMarketplace() {
     });
 
     signAndExecute(
-      { transactionBlock: tx },
+      { transaction: tx },
       {
         onSuccess: () => alert('购买成功!'),
       }
@@ -843,17 +843,17 @@ export default NFTMarketplace;
 ### 1. 错误处理
 
 ```typescript
-import { useSignAndExecuteTransactionBlock } from '@mysten/dapp-kit';
+import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 
 function TransactionWithErrorHandling() {
-  const { mutate: signAndExecute } = useSignAndExecuteTransactionBlock();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   const handleTransaction = () => {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
     // ... 构建交易
 
     signAndExecute(
-      { transactionBlock: tx },
+      { transaction: tx },
       {
         onSuccess: (result) => {
           // 检查交易状态
@@ -886,11 +886,11 @@ function TransactionWithErrorHandling() {
 ```typescript
 function TransactionButton() {
   const { mutate: signAndExecute, isPending, isSuccess, isError } =
-    useSignAndExecuteTransactionBlock();
+    useSignAndExecuteTransaction();
 
   return (
     <div>
-      <button onClick={() => signAndExecute({ transactionBlock: tx })} disabled={isPending}>
+      <button onClick={() => signAndExecute({ transaction: tx })} disabled={isPending}>
         {isPending && '⏳ 处理中...'}
         {isSuccess && '✅ 成功'}
         {isError && '❌ 失败'}
@@ -978,7 +978,7 @@ function App() {
 
 ```typescript
 import { SuiClientProvider } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui.js/client';
+import { getFullnodeUrl } from '@mysten/sui/client';
 
 const networks = {
   devnet: { url: getFullnodeUrl('devnet') },
@@ -1042,13 +1042,13 @@ function WalletList() {
 ```typescript
 function TransactionWithProgress() {
   const [status, setStatus] = useState<'idle' | 'signing' | 'executing' | 'success' | 'error'>('idle');
-  const { mutate: signAndExecute } = useSignAndExecuteTransactionBlock();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   const handleTransaction = () => {
     setStatus('signing');
 
     signAndExecute(
-      { transactionBlock: tx },
+      { transaction: tx },
       {
         onSuccess: (result) => {
           setStatus('executing');

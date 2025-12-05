@@ -33,7 +33,7 @@
 ## 安装
 
 ```bash
-npm install @mysten/kiosk @mysten/sui.js
+npm install @mysten/kiosk @mysten/sui
 ```
 
 ## 基础概念
@@ -57,9 +57,9 @@ npm install @mysten/kiosk @mysten/sui.js
 
 ```typescript
 import { KioskClient, KioskTransaction } from '@mysten/kiosk';
-import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { Transaction } from '@mysten/sui/transactions';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 // 初始化
 const client = new SuiClient({ url: getFullnodeUrl('devnet') });
@@ -73,16 +73,16 @@ const kioskClient = new KioskClient({
 
 // 创建新的 Kiosk
 async function createKiosk() {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 创建 Kiosk
-  const kioskTx = new KioskTransaction({ transactionBlock: tx, kioskClient });
+  const kioskTx = new KioskTransaction({ transaction: tx, kioskClient });
   kioskTx.create();
 
   // 执行交易
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx,
+    transaction: tx,
     options: {
       showEffects: true,
       showObjectChanges: true,
@@ -178,8 +178,8 @@ async function placeNFTInKiosk(
   ownerCapId: string,
   nftId: string
 ) {
-  const tx = new TransactionBlock();
-  const kioskTx = new KioskTransaction({ transactionBlock: tx, kioskClient });
+  const tx = new Transaction();
+  const kioskTx = new KioskTransaction({ transaction: tx, kioskClient });
 
   // 放入 NFT
   kioskTx.place({
@@ -189,9 +189,9 @@ async function placeNFTInKiosk(
     kioskCap: ownerCapId,
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx,
+    transaction: tx,
   });
 
   console.log('✅ NFT 已放入 Kiosk');
@@ -208,8 +208,8 @@ async function listNFT(
   nftId: string,
   price: bigint
 ) {
-  const tx = new TransactionBlock();
-  const kioskTx = new KioskTransaction({ transactionBlock: tx, kioskClient });
+  const tx = new Transaction();
+  const kioskTx = new KioskTransaction({ transaction: tx, kioskClient });
 
   // 上架 NFT
   kioskTx.list({
@@ -220,9 +220,9 @@ async function listNFT(
     kioskCap: ownerCapId,
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx,
+    transaction: tx,
   });
 
   console.log('✅ NFT 已上架，价格:', price);
@@ -238,8 +238,8 @@ async function delistNFT(
   ownerCapId: string,
   nftId: string
 ) {
-  const tx = new TransactionBlock();
-  const kioskTx = new KioskTransaction({ transactionBlock: tx, kioskClient });
+  const tx = new Transaction();
+  const kioskTx = new KioskTransaction({ transaction: tx, kioskClient });
 
   // 取消上架
   kioskTx.delist({
@@ -249,9 +249,9 @@ async function delistNFT(
     kioskCap: ownerCapId,
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx,
+    transaction: tx,
   });
 
   console.log('✅ NFT 已下架');
@@ -267,8 +267,8 @@ async function takeNFTFromKiosk(
   ownerCapId: string,
   nftId: string
 ) {
-  const tx = new TransactionBlock();
-  const kioskTx = new KioskTransaction({ transactionBlock: tx, kioskClient });
+  const tx = new Transaction();
+  const kioskTx = new KioskTransaction({ transaction: tx, kioskClient });
 
   // 取出 NFT
   const nft = kioskTx.take({
@@ -281,9 +281,9 @@ async function takeNFTFromKiosk(
   // 转移给自己
   tx.transferObjects([nft], tx.pure(keypair.getPublicKey().toSuiAddress()));
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx,
+    transaction: tx,
   });
 
   console.log('✅ NFT 已取出');
@@ -301,8 +301,8 @@ async function purchaseNFT(
   nftId: string,
   price: bigint
 ) {
-  const tx = new TransactionBlock();
-  const kioskTx = new KioskTransaction({ transactionBlock: tx, kioskClient });
+  const tx = new Transaction();
+  const kioskTx = new KioskTransaction({ transaction: tx, kioskClient });
 
   // 准备支付
   const [coin] = tx.splitCoins(tx.gas, [tx.pure(price)]);
@@ -319,9 +319,9 @@ async function purchaseNFT(
   // 转移给买家
   tx.transferObjects([nft], tx.pure(keypair.getPublicKey().toSuiAddress()));
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx,
+    transaction: tx,
     options: {
       showEffects: true,
       showObjectChanges: true,
@@ -342,8 +342,8 @@ async function purchaseWithRoyalty(
   price: bigint,
   transferPolicyId: string
 ) {
-  const tx = new TransactionBlock();
-  const kioskTx = new KioskTransaction({ transactionBlock: tx, kioskClient });
+  const tx = new Transaction();
+  const kioskTx = new KioskTransaction({ transaction: tx, kioskClient });
 
   // 准备支付
   const [coin] = tx.splitCoins(tx.gas, [tx.pure(price)]);
@@ -368,9 +368,9 @@ async function purchaseWithRoyalty(
   // 转移给买家
   tx.transferObjects([nft], tx.pure(keypair.getPublicKey().toSuiAddress()));
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx,
+    transaction: tx,
   });
 
   console.log('✅ NFT 购买成功（包含版税）');
@@ -384,7 +384,7 @@ async function purchaseWithRoyalty(
 
 ```typescript
 async function createTransferPolicy(nftType: string) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 创建转移策略
   tx.moveCall({
@@ -396,9 +396,9 @@ async function createTransferPolicy(nftType: string) {
     ],
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx,
+    transaction: tx,
     options: {
       showObjectChanges: true,
     },
@@ -431,7 +431,7 @@ async function addRoyaltyRule(
   policyCapId: string,
   royaltyBps: number // 基点，例如 500 = 5%
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 添加版税规则
   tx.moveCall({
@@ -445,9 +445,9 @@ async function addRoyaltyRule(
     ],
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx,
+    transaction: tx,
   });
 
   console.log(`✅ 已添加 ${royaltyBps / 100}% 版税规则`);
@@ -459,7 +459,7 @@ async function addRoyaltyRule(
 
 ```typescript
 async function addLockRule(policyId: string, policyCapId: string) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 添加锁定规则（NFT 必须放在 Kiosk 中）
   tx.moveCall({
@@ -471,9 +471,9 @@ async function addLockRule(policyId: string, policyCapId: string) {
     ],
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx,
+    transaction: tx,
   });
 
   console.log('✅ 已添加锁定规则');
@@ -524,17 +524,17 @@ class KioskManager {
   }
 
   private async createKiosk() {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
     const kioskTx = new KioskTransaction({
-      transactionBlock: tx,
+      transaction: tx,
       kioskClient: this.kioskClient,
     });
 
     kioskTx.create();
 
-    const result = await this.client.signAndExecuteTransactionBlock({
+    const result = await this.client.signAndExecuteTransaction({
       signer: this.keypair,
-      transactionBlock: tx,
+      transaction: tx,
       options: { showObjectChanges: true },
     });
 
@@ -557,9 +557,9 @@ class KioskManager {
       throw new Error('Kiosk 未初始化');
     }
 
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
     const kioskTx = new KioskTransaction({
-      transactionBlock: tx,
+      transaction: tx,
       kioskClient: this.kioskClient,
     });
 
@@ -580,9 +580,9 @@ class KioskManager {
       kioskCap: this.ownerCapId,
     });
 
-    const result = await this.client.signAndExecuteTransactionBlock({
+    const result = await this.client.signAndExecuteTransaction({
       signer: this.keypair,
-      transactionBlock: tx,
+      transaction: tx,
     });
 
     console.log('✅ NFT 已上架');
@@ -597,9 +597,9 @@ class KioskManager {
     price: bigint,
     transferPolicyId?: string
   ) {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
     const kioskTx = new KioskTransaction({
-      transactionBlock: tx,
+      transaction: tx,
       kioskClient: this.kioskClient,
     });
 
@@ -642,9 +642,9 @@ class KioskManager {
       tx.pure(this.keypair.getPublicKey().toSuiAddress())
     );
 
-    const result = await this.client.signAndExecuteTransactionBlock({
+    const result = await this.client.signAndExecuteTransaction({
       signer: this.keypair,
-      transactionBlock: tx,
+      transaction: tx,
     });
 
     console.log('✅ NFT 购买成功');
@@ -695,9 +695,9 @@ class KioskManager {
       throw new Error('Kiosk 未初始化');
     }
 
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
     const kioskTx = new KioskTransaction({
-      transactionBlock: tx,
+      transaction: tx,
       kioskClient: this.kioskClient,
     });
 
@@ -713,9 +713,9 @@ class KioskManager {
       tx.pure(this.keypair.getPublicKey().toSuiAddress())
     );
 
-    const result = await this.client.signAndExecuteTransactionBlock({
+    const result = await this.client.signAndExecuteTransaction({
       signer: this.keypair,
-      transactionBlock: tx,
+      transaction: tx,
     });
 
     console.log('✅ 利润已提取');

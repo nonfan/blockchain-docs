@@ -22,8 +22,8 @@
 | 网络      | 节点                                  | 水龙头                                 |
 |---------|-------------------------------------|-------------------------------------|
 | local   | `http://127.0.0.1:9000` default     | `http://127.0.0.1:9123/v2/gas`      |
-| Devnet  | `https://fullnode.devnet.sui.io:443` | `https://faucet.devnet.sui.io/v2/gas` |
-| Testnet | `https://fullnode.testnet.sui.io:443` | `https://faucet.testnet.sui.io/v2/gas` |
+| Devnet  | `https://fullnode.devnet.sui.io:443` | `https://faucet.devnet.sui.io/gas`  |
+| Testnet | `https://fullnode.testnet.sui.io:443` | `https://faucet.testnet.sui.io/gas` |
 | Mainnet | `https://fullnode.mainnet.sui.io:443` | `null`                              |
 
 > [!WARNING] 生产环境防范
@@ -35,7 +35,7 @@ SDK 包含一组模块化包，你可以独立使用，也可以一起使用。�
 
 - `@mysten/sui/client` - 用于与 Sui RPC 节点交互的客户端。
 - `@mysten/sui/bcs` - 一个带有预定义类型类型的 Sui BCS 构建器。
-- `@mysten/SUI/transactions` — 用于构建和交互事务的公用事业。
+- `@mysten/sui/transactions` — 用于构建和交互事务的公用事业。
 - `@mysten/sui/keypairs/*` - 针对特定 KeyPair 实现的模块化导出。
 - `@mysten/sui/verify` - 验证交易和消息的方法。
 - `@mysten/sui/cryptography` — 密码学的共享类型和类。
@@ -49,8 +49,9 @@ SDK 包含一组模块化包，你可以独立使用，也可以一起使用。�
 
 ### 环境要求
 
-- Node.js <Badge type="tip" text="^16.x"/>
-- npm <Badge type="tip" text="^1.22.x"/>
+- Node.js <Badge type="tip" text=">=16.x"/>
+- npm <Badge type="tip" text=">=9.x"/>
+- Yarn <Badge type="tip" text=">=1.22.x"/>
 
 ### 安装 SDK
 

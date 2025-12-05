@@ -31,10 +31,10 @@
 npm install @mysten/bcs
 ```
 
-BCS 也包含在 `@mysten/sui.js` 中：
+BCS 也包含在 `@mysten/sui` 中：
 
 ```typescript
-import { bcs } from '@mysten/sui.js/bcs';
+import { bcs } from '@mysten/sui/bcs';
 ```
 
 ## 基础类型编码
@@ -270,8 +270,8 @@ const wrapperBytes = NumberWrapper.serialize(wrapperData).toBytes();
 ### 编码交易参数
 
 ```typescript
-import { TransactionBlock } from '@mysten/sui.js/transactions';
-import { bcs } from '@mysten/sui.js/bcs';
+import { Transaction } from '@mysten/sui/transactions';
+import { bcs } from '@mysten/sui/bcs';
 
 // 定义复杂参数类型
 const NFTMetadata = bcs.struct('NFTMetadata', {
@@ -301,7 +301,7 @@ const metadata = {
 const metadataBytes = NFTMetadata.serialize(metadata).toBytes();
 
 // 在交易中使用
-const tx = new TransactionBlock();
+const tx = new Transaction();
 tx.moveCall({
   target: '0xpackage::nft::mint_with_metadata',
   arguments: [
@@ -373,7 +373,7 @@ tx.moveCall({
 ### 解析对象内容
 
 ```typescript
-import { SuiClient } from '@mysten/sui.js/client';
+import { SuiClient } from '@mysten/sui/client';
 
 // 定义对象结构
 const GameAsset = bcs.struct('GameAsset', {

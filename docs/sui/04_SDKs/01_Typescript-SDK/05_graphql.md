@@ -35,7 +35,7 @@
 ## 安装
 
 ```bash
-npm install @mysten/graphql-transport @mysten/sui.js graphql
+npm install @mysten/graphql-transport @mysten/sui graphql
 ```
 
 ## 基础配置

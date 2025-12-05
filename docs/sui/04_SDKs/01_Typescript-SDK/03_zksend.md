@@ -29,7 +29,7 @@
 ## 安装
 
 ```bash
-npm install @mysten/zksend @mysten/sui.js
+npm install @mysten/zksend @mysten/sui
 ```
 
 ## 基础概念
@@ -55,9 +55,9 @@ zkSend 链接包含：
 
 ```typescript
 import { ZkSendLinkBuilder } from '@mysten/zksend';
-import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { Transaction } from '@mysten/sui/transactions';
 
 // 初始化
 const client = new SuiClient({ url: getFullnodeUrl('devnet') });
@@ -80,12 +80,12 @@ linkBuilder.addClaimableSui({
 });
 
 // 创建交易
-const { transactionBlock, link } = await linkBuilder.createSendTransaction();
+const { transaction, link } = await linkBuilder.createSendTransaction();
 
 // 签名并执行
-const result = await client.signAndExecuteTransactionBlock({
+const result = await client.signAndExecuteTransaction({
   signer: keypair,
-  transactionBlock,
+  transaction,
 });
 
 console.log('zkSend 链接:', link.url);
@@ -115,12 +115,12 @@ async function sendSuiViaLink(amount: number) {
   linkBuilder.setDescription('欢迎奖励 - 1 SUI');
 
   // 创建交易
-  const { transactionBlock, link } = await linkBuilder.createSendTransaction();
+  const { transaction, link } = await linkBuilder.createSendTransaction();
 
   // 执行交易
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock,
+    transaction,
   });
 
   return {
@@ -151,11 +151,11 @@ async function sendNFTViaLink(nftId: string) {
 
   linkBuilder.setDescription('限量版 NFT 礼物');
 
-  const { transactionBlock, link } = await linkBuilder.createSendTransaction();
+  const { transaction, link } = await linkBuilder.createSendTransaction();
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock,
+    transaction,
   });
 
   return link;
@@ -185,11 +185,11 @@ async function sendMultipleAssets() {
 
   linkBuilder.setDescription('新手礼包 - 1 SUI + 2 NFT + Token');
 
-  const { transactionBlock, link } = await linkBuilder.createSendTransaction();
+  const { transaction, link } = await linkBuilder.createSendTransaction();
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock,
+    transaction,
   });
 
   return link;
@@ -218,10 +218,10 @@ async function claimAssets(linkUrl: string, claimCode: string) {
   });
 
   // 签名并执行
-  const result = await client.signAndExecuteTransactionBlock({
-    signer: recipientKeypair,
-    transactionBlock: claimTx,
-  });
+const result = await client.signAndExecuteTransaction({
+  signer: recipientKeypair,
+  transaction: claimTx,
+});
 
   console.log('领取成功!', result.digest);
   return result;
@@ -293,11 +293,11 @@ async function createBulkLinks(
 
     linkBuilder.setDescription(`空投 #${i + 1}`);
 
-    const { transactionBlock, link } = await linkBuilder.createSendTransaction();
+    const { transaction, link } = await linkBuilder.createSendTransaction();
 
-    const result = await client.signAndExecuteTransactionBlock({
+    const result = await client.signAndExecuteTransaction({
       signer: keypair,
-      transactionBlock,
+      transaction,
     });
 
     links.push({
@@ -345,18 +345,18 @@ async function createBulkLinksOptimized(
 
       linkBuilder.addClaimableSui({ amount: amountPerRecipient });
 
-      const { transactionBlock, link } = await linkBuilder.createSendTransaction();
+      const { transaction, link } = await linkBuilder.createSendTransaction();
 
       batchLinks.push(link);
-      batchTxs.push(transactionBlock);
+      batchTxs.push(transaction);
     }
 
     // 批量执行
     const results = await Promise.all(
       batchTxs.map((tx) =>
-        client.signAndExecuteTransactionBlock({
+        client.signAndExecuteTransaction({
           signer: keypair,
-          transactionBlock: tx,
+          transaction: tx,
         })
       )
     );
@@ -423,11 +423,11 @@ class RedPacket {
     linkBuilder.addClaimableSui({ amount });
     linkBuilder.setExpirationTime(Date.now() + 24 * 60 * 60 * 1000); // 24 小时
 
-    const { transactionBlock, link } = await linkBuilder.createSendTransaction();
+    const { transaction, link } = await linkBuilder.createSendTransaction();
 
-    await this.client.signAndExecuteTransactionBlock({
+    await this.client.signAndExecuteTransaction({
       signer: this.keypair,
-      transactionBlock,
+      transaction,
     });
 
     return link;
@@ -478,14 +478,14 @@ console.log('随机红包:', randomLinks);
 ```typescript
 import { useState } from 'react';
 import { ZkSendLinkBuilder } from '@mysten/zksend';
-import { useSignAndExecuteTransactionBlock } from '@mysten/dapp-kit';
+import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 
 function CreateZkSendLink() {
   const [amount, setAmount] = useState('');
   const [link, setLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { mutate: signAndExecute } = useSignAndExecuteTransactionBlock();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   const handleCreate = async () => {
     setLoading(true);
@@ -500,11 +500,11 @@ function CreateZkSendLink() {
         amount: BigInt(parseFloat(amount) * 1_000_000_000),
       });
 
-      const { transactionBlock, link: zkLink } =
+      const { transaction, link: zkLink } =
         await linkBuilder.createSendTransaction();
 
       signAndExecute(
-        { transactionBlock },
+        { transaction },
         {
           onSuccess: () => {
             setLink(zkLink.url);
@@ -563,14 +563,14 @@ function CreateZkSendLink() {
 ```typescript
 import { useState, useEffect } from 'react';
 import { ZkSendLink } from '@mysten/zksend';
-import { useSignAndExecuteTransactionBlock, useCurrentAccount } from '@mysten/dapp-kit';
+import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-kit';
 
 function ClaimZkSendLink({ linkUrl }: { linkUrl: string }) {
   const account = useCurrentAccount();
   const [status, setStatus] = useState<any>(null);
   const [claiming, setClaiming] = useState(false);
 
-  const { mutate: signAndExecute } = useSignAndExecuteTransactionBlock();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   useEffect(() => {
     // 检查链接状态
@@ -604,7 +604,7 @@ function ClaimZkSendLink({ linkUrl }: { linkUrl: string }) {
       });
 
       signAndExecute(
-        { transactionBlock: claimTx },
+        { transaction: claimTx },
         {
           onSuccess: () => {
             alert('领取成功!');
@@ -722,11 +722,11 @@ async function safeCreateLink(amount: bigint) {
 
     linkBuilder.addClaimableSui({ amount });
 
-    const { transactionBlock, link } = await linkBuilder.createSendTransaction();
+    const { transaction, link } = await linkBuilder.createSendTransaction();
 
-    const result = await client.signAndExecuteTransactionBlock({
+    const result = await client.signAndExecuteTransaction({
       signer: keypair,
-      transactionBlock,
+      transaction,
     });
 
     // 验证交易成功

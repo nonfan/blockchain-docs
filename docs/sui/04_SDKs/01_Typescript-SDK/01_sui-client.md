@@ -414,7 +414,7 @@ async function queryEventsBySender(sender: string) {
 ### 基础转账
 
 ```typescript
-import { TransactionBlock } from '@mysten/sui/transactions';
+import { Transaction } from '@mysten/sui/transactions';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 async function transferSui(
@@ -422,18 +422,18 @@ async function transferSui(
   recipient: string,
   amount: number
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 从 gas 币中分割指定数量
   const [coin] = tx.splitCoins(tx.gas, [tx.pure(amount)]);
 
   // 转移给接收者
-  tx.transferObjects([coin], tx.pure(recipient));
+  tx.transferObjects([coin], tx.pure.address(recipient));
 
   // 签名并执行
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx,
+    transaction: tx,
     options: {
       showEffects: true,
       showObjectChanges: true
@@ -455,17 +455,17 @@ async function transferObject(
   objectId: string,
   recipient: string
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 转移对象
   tx.transferObjects(
     [tx.object(objectId)],
-    tx.pure(recipient)
+    tx.pure.address(recipient)
   );
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -481,16 +481,16 @@ async function mergeCoins(
   primaryCoin: string,
   coinsToMerge: string[]
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   tx.mergeCoins(
     tx.object(primaryCoin),
     coinsToMerge.map(coin => tx.object(coin))
   );
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -502,7 +502,7 @@ async function splitCoin(
   coinId: string,
   amounts: number[]
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   const coins = tx.splitCoins(
     tx.object(coinId),
@@ -512,12 +512,12 @@ async function splitCoin(
   // 将拆分的币转回发送者
   tx.transferObjects(
     [coins],
-    tx.pure(senderKeypair.getPublicKey().toSuiAddress())
+    tx.pure.address(senderKeypair.getPublicKey().toSuiAddress())
   );
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -535,7 +535,7 @@ async function callContract(
   functionName: string,
   args: any[]
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   tx.moveCall({
     target: `${packageId}::${moduleName}::${functionName}`,
@@ -549,9 +549,9 @@ async function callContract(
     })
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx,
+    transaction: tx,
     options: {
       showEffects: true,
       showEvents: true,
@@ -567,7 +567,7 @@ async function callContractWithTypeArgs(
   senderKeypair: Ed25519Keypair,
   packageId: string
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   tx.moveCall({
     target: `${packageId}::my_module::generic_function`,
@@ -578,9 +578,9 @@ async function callContractWithTypeArgs(
     ]
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -591,7 +591,7 @@ async function callContractWithTypeArgs(
 
 ```typescript
 async function chainedCalls(senderKeypair: Ed25519Keypair) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 调用 1：创建对象
   const [obj] = tx.moveCall({
@@ -611,9 +611,9 @@ async function chainedCalls(senderKeypair: Ed25519Keypair) {
     tx.pure(senderKeypair.getPublicKey().toSuiAddress())
   );
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -629,17 +629,17 @@ async function transferWithGasBudget(
   recipient: string,
   amount: number
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 设置 gas 预算
   tx.setGasBudget(10000000);  // 0.01 SUI
 
   const [coin] = tx.splitCoins(tx.gas, [tx.pure(amount)]);
-  tx.transferObjects([coin], tx.pure(recipient));
+  tx.transferObjects([coin], tx.pure.address(recipient));
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -652,10 +652,10 @@ async function sponsoredTransaction(
   recipient: string,
   amount: number
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   const [coin] = tx.splitCoins(tx.gas, [tx.pure(amount)]);
-  tx.transferObjects([coin], tx.pure(recipient));
+  tx.transferObjects([coin], tx.pure.address(recipient));
 
   // 设置 gas 支付者
   tx.setSender(senderKeypair.getPublicKey().toSuiAddress());
@@ -668,8 +668,8 @@ async function sponsoredTransaction(
   const sponsorSignature = await tx.sign({ client, signer: sponsorKeypair });
 
   // 执行交易
-  const result = await client.executeTransactionBlock({
-    transactionBlock: senderSignature.bytes,
+  const result = await client.executeTransaction({
+    transaction: senderSignature.bytes,
     signature: [senderSignature.signature, sponsorSignature.signature]
   });
 
@@ -812,10 +812,10 @@ console.log('解码后:', decoded);
 
 ```typescript
 import { bcs } from '@mysten/sui/bcs';
-import { TransactionBlock } from '@mysten/sui/transactions';
+import { Transaction } from '@mysten/sui/transactions';
 
 async function callWithBcsArgs(senderKeypair: Ed25519Keypair) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 对于复杂参数,使用 BCS 编码
   const complexArg = bcs.struct('MyArg', {
@@ -833,9 +833,9 @@ async function callWithBcsArgs(senderKeypair: Ed25519Keypair) {
     ]
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -887,7 +887,7 @@ async function batchTransfer(
   senderKeypair: Ed25519Keypair,
   recipients: Array<{ address: string; amount: bigint }>
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 在一个交易中完成多个转账
   for (const { address, amount } of recipients) {
@@ -895,9 +895,9 @@ async function batchTransfer(
     tx.transferObjects([coin], tx.pure(address));
   }
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx,
+    transaction: tx,
     options: {
       showEffects: true,
       showObjectChanges: true
@@ -915,7 +915,7 @@ async function batchObjectOperations(
   senderKeypair: Ed25519Keypair,
   objectIds: string[]
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 批量调用合约函数
   for (const objectId of objectIds) {
@@ -925,9 +925,9 @@ async function batchObjectOperations(
     });
   }
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -943,7 +943,7 @@ async function dryRunTransaction(
   recipient: string,
   amount: bigint
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   const [coin] = tx.splitCoins(tx.gas, [tx.pure(amount)]);
   tx.transferObjects([coin], tx.pure(recipient));
 
@@ -951,11 +951,10 @@ async function dryRunTransaction(
   tx.setSender(senderKeypair.getPublicKey().toSuiAddress());
 
   // 构建交易
-  const txBytes = await tx.build({ client });
 
   // Dry run
-  const dryRunResult = await client.dryRunTransactionBlock({
-    transactionBlock: txBytes
+  const dryRunResult = await client.dryRunTransaction({
+    transaction: tx
   });
 
   console.log('交易状态:', dryRunResult.effects.status);
@@ -972,16 +971,16 @@ async function dryRunTransaction(
 ```typescript
 // 用于调试和测试,可以查看函数返回值
 async function devInspect(sender: string) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   tx.moveCall({
     target: `${PACKAGE_ID}::module::get_value`,
     arguments: [tx.object('0x...')]
   });
 
-  const result = await client.devInspectTransactionBlock({
+  const result = await client.devInspectTransaction({
     sender,
-    transactionBlock: tx
+    transaction: tx
   });
 
   console.log('执行结果:', result.results);
@@ -1028,7 +1027,7 @@ async function multiSigTransaction(
   recipient: string,
   amount: bigint
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   const [coin] = tx.splitCoins(tx.gas, [tx.pure(amount)]);
   tx.transferObjects([coin], tx.pure(recipient));
 
@@ -1049,8 +1048,8 @@ async function multiSigTransaction(
   );
 
   // 执行交易
-  const result = await client.executeTransactionBlock({
-    transactionBlock: signatures[0].bytes,
+  const result = await client.executeTransaction({
+    transaction: signatures[0].bytes,
     signature: multiSigSignature
   });
 
@@ -1063,7 +1062,7 @@ async function multiSigTransaction(
 ```typescript
 // 链式调用和复杂逻辑
 async function complexTransaction(senderKeypair: Ed25519Keypair) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 1. 拆分代币
   const [coin1, coin2] = tx.splitCoins(tx.gas, [
@@ -1088,15 +1087,15 @@ async function complexTransaction(senderKeypair: Ed25519Keypair) {
     target: `${PACKAGE_ID}::module::conditional_transfer`,
     arguments: [
       newObject,
-      tx.pure(recipient1),
-      tx.pure(recipient2),
+      tx.pure.address(recipient1),
+      tx.pure.address(recipient2),
       tx.pure(true)  // 条件
     ]
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx,
+    transaction: tx,
     options: {
       showEffects: true,
       showEvents: true,
@@ -1384,7 +1383,7 @@ class InsufficientBalanceError extends Error {
 // 安全执行交易
 async function safeExecuteTransaction(
   senderKeypair: Ed25519Keypair,
-  tx: TransactionBlock
+  tx: Transaction
 ) {
   try {
     // 1. 检查余额
@@ -1398,8 +1397,8 @@ async function safeExecuteTransaction(
     // 2. Dry run 检查
     tx.setSender(address);
     const txBytes = await tx.build({ client });
-    const dryRun = await client.dryRunTransactionBlock({
-      transactionBlock: txBytes
+    const dryRun = await client.dryRunTransaction({
+      transaction: txBytes
     });
 
     if (dryRun.effects.status.status !== 'success') {
@@ -1411,9 +1410,9 @@ async function safeExecuteTransaction(
     }
 
     // 3. 执行交易
-    const result = await client.signAndExecuteTransactionBlock({
+    const result = await client.signAndExecuteTransaction({
       signer: senderKeypair,
-      transactionBlock: tx,
+      transaction: tx,
       options: {
         showEffects: true,
         showObjectChanges: true
@@ -1447,7 +1446,7 @@ async function safeExecuteTransaction(
 ```typescript
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { TransactionBlock } from '@mysten/sui/transactions';
+import { Transaction } from '@mysten/sui/transactions';
 
 // NFT 管理类
 class NFTManager {
@@ -1463,7 +1462,7 @@ class NFTManager {
 
   // Mint NFT
   async mintNFT(name: string, description: string, imageUrl: string) {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     tx.moveCall({
       target: `${this.packageId}::nft::mint`,
@@ -1474,9 +1473,9 @@ class NFTManager {
       ]
     });
 
-    const result = await this.client.signAndExecuteTransactionBlock({
+    const result = await this.client.signAndExecuteTransaction({
       signer: this.keypair,
-      transactionBlock: tx,
+      transaction: tx,
       options: {
         showEffects: true,
         showObjectChanges: true,
@@ -1500,13 +1499,13 @@ class NFTManager {
 
   // 转移 NFT
   async transferNFT(nftId: string, recipient: string) {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
-    tx.transferObjects([tx.object(nftId)], tx.pure(recipient));
+    tx.transferObjects([tx.object(nftId)], tx.pure.address(recipient));
 
-    const result = await this.client.signAndExecuteTransactionBlock({
+    const result = await this.client.signAndExecuteTransaction({
       signer: this.keypair,
-      transactionBlock: tx,
+      transaction: tx,
       options: {
         showEffects: true
       }
@@ -1518,7 +1517,7 @@ class NFTManager {
 
   // 批量 Mint NFT
   async batchMintNFTs(nfts: Array<{ name: string; description: string; imageUrl: string }>) {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     for (const nft of nfts) {
       tx.moveCall({
@@ -1531,9 +1530,9 @@ class NFTManager {
       });
     }
 
-    const result = await this.client.signAndExecuteTransactionBlock({
+    const result = await this.client.signAndExecuteTransaction({
       signer: this.keypair,
-      transactionBlock: tx,
+      transaction: tx,
       options: {
         showEffects: true,
         showObjectChanges: true
@@ -1580,16 +1579,16 @@ class NFTManager {
 
   // 燃烧 NFT
   async burnNFT(nftId: string) {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     tx.moveCall({
       target: `${this.packageId}::nft::burn`,
       arguments: [tx.object(nftId)]
     });
 
-    const result = await this.client.signAndExecuteTransactionBlock({
+    const result = await this.client.signAndExecuteTransaction({
       signer: this.keypair,
-      transactionBlock: tx,
+      transaction: tx,
       options: {
         showEffects: true
       }
@@ -1601,7 +1600,7 @@ class NFTManager {
 
   // 更新 NFT 元数据
   async updateNFTMetadata(nftId: string, newName: string, newDescription: string) {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     tx.moveCall({
       target: `${this.packageId}::nft::update_metadata`,
@@ -1612,9 +1611,9 @@ class NFTManager {
       ]
     });
 
-    const result = await this.client.signAndExecuteTransactionBlock({
+    const result = await this.client.signAndExecuteTransaction({
       signer: this.keypair,
-      transactionBlock: tx,
+      transaction: tx,
       options: {
         showEffects: true,
         showEvents: true
@@ -1703,7 +1702,7 @@ async function addLiquidity(
   amountA: number,
   amountB: number
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 拆分代币
   const [coinA] = tx.splitCoins(tx.object(coinAId), [tx.pure(amountA)]);
@@ -1719,9 +1718,9 @@ async function addLiquidity(
     ]
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -1734,7 +1733,7 @@ async function swap(
   amountIn: number,
   minAmountOut: number
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   const [coinIn] = tx.splitCoins(tx.object(coinInId), [tx.pure(amountIn)]);
 
@@ -1748,9 +1747,9 @@ async function swap(
     ]
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -1764,12 +1763,12 @@ async function swap(
 ```typescript
 async function safeTransaction(senderKeypair: Ed25519Keypair) {
   try {
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
     // ... 构建交易
 
-    const result = await client.signAndExecuteTransactionBlock({
+    const result = await client.signAndExecuteTransaction({
       signer: senderKeypair,
-      transactionBlock: tx,
+      transaction: tx,
       options: {
         showEffects: true
       }
@@ -1797,17 +1796,17 @@ async function batchTransfer(
   senderKeypair: Ed25519Keypair,
   recipients: Array<{ address: string; amount: number }>
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
 
   // 一次交易中完成多个转账
   for (const { address, amount } of recipients) {
     const [coin] = tx.splitCoins(tx.gas, [tx.pure(amount)]);
-    tx.transferObjects([coin], tx.pure(address));
+    tx.transferObjects([coin], tx.pure.address(address));
   }
 
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -1907,7 +1906,7 @@ async function requestFromFaucet(address: string) {
 ```typescript
 async function debugTransaction(
   senderKeypair: Ed25519Keypair,
-  tx: TransactionBlock
+  tx: Transaction
 ) {
   const address = senderKeypair.getPublicKey().toSuiAddress();
 
@@ -1919,8 +1918,8 @@ async function debugTransaction(
   tx.setSender(address);
   const txBytes = await tx.build({ client });
 
-  const dryRun = await client.dryRunTransactionBlock({
-    transactionBlock: txBytes
+  const dryRun = await client.dryRunTransaction({
+    transaction: txBytes
   });
 
   console.log('🔍 Dry Run 结果:');
@@ -1933,9 +1932,9 @@ async function debugTransaction(
   }
 
   // 3. 执行真实交易
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: senderKeypair,
-    transactionBlock: tx,
+    transaction: tx,
     options: {
       showEffects: true,
       showEvents: true,
@@ -2069,7 +2068,7 @@ await poller.start(address, (tx) => {
 ```typescript
 async function estimateGasCost(
   sender: string,
-  tx: TransactionBlock
+  tx: Transaction
 ): Promise<{
   computationCost: string;
   storageCost: string;
@@ -2081,8 +2080,8 @@ async function estimateGasCost(
   const txBytes = await tx.build({ client });
 
   // Dry run
-  const dryRun = await client.dryRunTransactionBlock({
-    transactionBlock: txBytes
+  const dryRun = await client.dryRunTransaction({
+    transaction: txBytes
   });
 
   if (dryRun.effects.status.status !== 'success') {
@@ -2104,7 +2103,7 @@ async function estimateGasCost(
 }
 
 // 使用示例
-const tx = new TransactionBlock();
+const tx = new Transaction();
 const [coin] = tx.splitCoins(tx.gas, [tx.pure(1000000000n)]);
 tx.transferObjects([coin], tx.pure(recipientAddress));
 
@@ -2124,11 +2123,11 @@ console.log('  总成本:', mistToSui(BigInt(gasCost.totalCost)), 'SUI');
 // 单签名
 async function singleSignature(
   keypair: Ed25519Keypair,
-  tx: TransactionBlock
+  tx: Transaction
 ) {
-  const result = await client.signAndExecuteTransactionBlock({
+  const result = await client.signAndExecuteTransaction({
     signer: keypair,
-    transactionBlock: tx
+    transaction: tx
   });
 
   return result;
@@ -2137,7 +2136,7 @@ async function singleSignature(
 // 分离签名和执行
 async function separateSignAndExecute(
   keypair: Ed25519Keypair,
-  tx: TransactionBlock
+  tx: Transaction
 ) {
   // 1. 签名
   const signedTx = await tx.sign({
@@ -2146,8 +2145,8 @@ async function separateSignAndExecute(
   });
 
   // 2. 执行
-  const result = await client.executeTransactionBlock({
-    transactionBlock: signedTx.bytes,
+  const result = await client.executeTransaction({
+    transaction: signedTx.bytes,
     signature: signedTx.signature,
     options: {
       showEffects: true
@@ -2180,7 +2179,7 @@ async function multiSignatureExample() {
   console.log('多签地址:', multiSigAddress);
 
   // 构建交易
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   tx.setSender(multiSigAddress);
   // ... 添加交易操作
 
@@ -2195,8 +2194,8 @@ async function multiSignatureExample() {
   ]);
 
   // 执行交易
-  const result = await client.executeTransactionBlock({
-    transactionBlock: sig1.bytes,
+  const result = await client.executeTransaction({
+    transaction: sig1.bytes,
     signature: multiSig
   });
 
