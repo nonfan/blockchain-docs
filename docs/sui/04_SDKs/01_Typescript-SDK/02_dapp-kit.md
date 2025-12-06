@@ -12,7 +12,7 @@
 
 ## 什么是 dApp Kit？
 
-**@mysten/dapp-kit** 是 Sui 官方提供的 React 工具包，专为构建去中心化应用（dApp）前端而设计。它提供了：
+`@mysten/dapp-kit` 是 Sui 官方提供的 React 工具包，专为构建去中心化应用（dApp）前端而设计。它提供了：
 
 - 🔌 **钱包连接**：支持多种 Sui 钱包（Sui Wallet、Suiet、Ethos 等）
 - ⚛️ **React Hooks**：简化链上数据查询和交易发送
@@ -27,7 +27,7 @@
 
 - **React**: >= 18.0.0
 - **Node.js**: >= 16.x
-- **TypeScript**: >= 4.5.0（可选但推荐）
+- **tsx**: >= 4.5.0（可选但推荐）
 
 ### 安装依赖
 
@@ -46,7 +46,7 @@ pnpm add @mysten/dapp-kit @mysten/sui @tanstack/react-query
 
 创建 `src/App.tsx`：
 
-```typescript
+```tsx
 import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
 import { getFullnodeUrl } from '@mysten/sui/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -80,7 +80,7 @@ export default App;
 
 ### 使用钱包连接按钮
 
-```typescript
+```tsx
 import { ConnectButton, useCurrentAccount } from '@mysten/dapp-kit';
 
 function WalletSection() {
@@ -102,7 +102,7 @@ function WalletSection() {
 
 ### 自定义钱包连接
 
-```typescript
+```tsx
 import {
   useConnectWallet,
   useDisconnectWallet,
@@ -148,7 +148,7 @@ function CustomWalletConnect() {
 
 ### 钱包状态管理
 
-```typescript
+```tsx
 import {
   useCurrentAccount,
   useCurrentWallet,
@@ -207,7 +207,7 @@ function WalletInfo() {
 
 ### 查询余额
 
-```typescript
+```tsx
 import { useBalance, useCurrentAccount } from '@mysten/dapp-kit';
 
 function Balance() {
@@ -232,7 +232,7 @@ function Balance() {
 
 ### 查询所有代币余额
 
-```typescript
+```tsx
 import { useSuiClientQuery, useCurrentAccount } from '@mysten/dapp-kit';
 
 function AllBalances() {
@@ -260,7 +260,7 @@ function AllBalances() {
 
 ### 查询拥有的对象
 
-```typescript
+```tsx
 import { useSuiClientQuery, useCurrentAccount } from '@mysten/dapp-kit';
 
 function OwnedObjects() {
@@ -301,7 +301,7 @@ function OwnedObjects() {
 
 ### 查询对象详情
 
-```typescript
+```tsx
 import { useSuiClientQuery } from '@mysten/dapp-kit';
 
 function ObjectDetail({ objectId }: { objectId: string }) {
@@ -328,7 +328,7 @@ function ObjectDetail({ objectId }: { objectId: string }) {
 
 ### 查询交易历史
 
-```typescript
+```tsx
 import { useSuiClientQuery, useCurrentAccount } from '@mysten/dapp-kit';
 
 function TransactionHistory() {
@@ -366,7 +366,7 @@ function TransactionHistory() {
 
 ### 基础转账
 
-```typescript
+```tsx
 import { Transaction } from '@mysten/sui/transactions';
 import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-kit';
 import { useState } from 'react';
@@ -433,7 +433,7 @@ function Transfer() {
 
 ### 调用智能合约
 
-```typescript
+```tsx
 import { Transaction } from '@mysten/sui/transactions';
 import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 
@@ -490,7 +490,7 @@ function MintNFT({ packageId }: { packageId: string }) {
 
 ### 仅签名（不执行）
 
-```typescript
+```tsx
 import { Transaction } from '@mysten/sui/transactions';
 import { useSignTransaction } from '@mysten/dapp-kit';
 
@@ -521,7 +521,7 @@ function SignOnly() {
 
 ### 带加载状态的交易
 
-```typescript
+```tsx
 import { Transaction } from '@mysten/sui/transactions';
 import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 
@@ -554,7 +554,7 @@ function TransferWithLoading() {
 
 ### 钱包 Hooks
 
-```typescript
+```tsx
 // 连接钱包
 const { mutate: connect } = useConnectWallet();
 
@@ -579,7 +579,7 @@ const { mutate: switchAccount } = useSwitchAccount();
 
 ### 查询 Hooks
 
-```typescript
+```js
 // 通用查询 Hook
 const { data, isLoading, error } = useSuiClientQuery(
   'methodName',  // RPC 方法名
@@ -606,7 +606,7 @@ const {
 
 ### 交易 Hooks
 
-```typescript
+```tsx
 // 签名并执行交易
 const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction();
 
@@ -619,7 +619,7 @@ const { mutate: executeTransaction } = useExecuteTransaction();
 
 ### 自定义 Hook 示例
 
-```typescript
+```tsx
 import { useSuiClientQuery, useCurrentAccount } from '@mysten/dapp-kit';
 
 // 获取用户的 NFT
@@ -667,7 +667,7 @@ function MyNFTs() {
 
 ### NFT 市场 dApp
 
-```typescript
+```tsx
 import { useState } from 'react';
 import {
   ConnectButton,
@@ -842,7 +842,7 @@ export default NFTMarketplace;
 
 ### 1. 错误处理
 
-```typescript
+```tsx
 import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 
 function TransactionWithErrorHandling() {
@@ -883,7 +883,7 @@ function TransactionWithErrorHandling() {
 
 ### 2. 加载状态管理
 
-```typescript
+```tsx
 function TransactionButton() {
   const { mutate: signAndExecute, isPending, isSuccess, isError } =
     useSignAndExecuteTransaction();
@@ -903,7 +903,7 @@ function TransactionButton() {
 
 ### 3. 数据刷新
 
-```typescript
+```tsx
 import { useSuiClientQuery } from '@mysten/dapp-kit';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -933,7 +933,7 @@ function DataWithRefresh() {
 
 ### 4. 条件渲染
 
-```typescript
+```tsx
 import { useCurrentAccount, useBalance } from '@mysten/dapp-kit';
 
 function ConditionalContent() {
@@ -959,7 +959,7 @@ function ConditionalContent() {
 
 ### 5. 自动重连
 
-```typescript
+```tsx
 import { useAutoConnectWallet } from '@mysten/dapp-kit';
 
 function App() {
@@ -976,7 +976,7 @@ function App() {
 
 **A:** 配置多个网络并允许用户切换：
 
-```typescript
+```tsx
 import { SuiClientProvider } from '@mysten/dapp-kit';
 import { getFullnodeUrl } from '@mysten/sui/client';
 
@@ -1009,7 +1009,7 @@ function App() {
 
 **A:** 检查钱包安装状态：
 
-```typescript
+```tsx
 import { useWallets } from '@mysten/dapp-kit';
 
 function WalletList() {
@@ -1039,7 +1039,7 @@ function WalletList() {
 
 **A:** 使用加载状态和回调：
 
-```typescript
+```tsx
 function TransactionWithProgress() {
   const [status, setStatus] = useState<'idle' | 'signing' | 'executing' | 'success' | 'error'>('idle');
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
