@@ -695,6 +695,8 @@ async function callContractWithTypeArgs(
 
 ### 链式调用
 
+在同一笔交易里链式调用多个函数，前一个函数的返回值可以直接当后一个函数的参数用。
+
 ```typescript
 async function chainedCalls(senderKeypair: Ed25519Keypair) {
   const tx = new Transaction();

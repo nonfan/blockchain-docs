@@ -12,7 +12,7 @@
 
 ## 什么是 dApp Kit？
 
-`@mysten/dapp-kit` 是 Sui 官方提供的 React 工具包，专为构建去中心化应用（dApp）前端而设计。它提供了：
+**@mysten/dapp-kit** 是 Sui 官方提供的 React 工具包，专为构建去中心化应用（dApp）前端而设计。它提供了：
 
 - 🔌 **钱包连接**：支持多种 Sui 钱包（Sui Wallet、Suiet、Ethos 等）
 - ⚛️ **React Hooks**：简化链上数据查询和交易发送
@@ -27,7 +27,7 @@
 
 - **React**: >= 18.0.0
 - **Node.js**: >= 16.x
-- **tsx**: >= 4.5.0（可选但推荐）
+- **typescript**: >= 4.5.0（可选但推荐）
 
 ### 安装依赖
 
@@ -387,7 +387,7 @@ function TransactionHistory() {
 
 ### 基础转账
 
-最常见的场景：向指定地址转账 SUI。通过 `Transaction` 构建交易，由用户钱包签名并执行，成功后返回 `digest` 等结果。
+最常见的场景：向指定地址转账 SUI。通过 `Transaction` 构建交易，由钱包签名并执行，支持多种交互方式。
 
 ```tsx
 import { Transaction } from '@mysten/sui/transactions';
@@ -397,66 +397,34 @@ import { useState } from 'react';
 function Transfer() {
   const account = useCurrentAccount();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
-  /**
-   * const { mutate: signAndExecute } = useSignAndExecuteTransaction({
-    onSuccess: (result) => {
-      console.log("交易成功:", result);
-      alert(`交易成功! Digest: ${result.digest}`);
-    },
-    onError: (error) => {
-      console.error("交易失败:", error);
-      alert(`交易失败: ${error.message}`);
-    },
-  });
-   */
+  // 可选：在初始化中配置统一回调 // [!code ++]
+  // const { mutate: signAndExecute } = useSignAndExecuteTransaction({ // [!code ++]
+  //   onSuccess: (result) => { // [!code ++]
+  //     console.log('交易成功:', result); // [!code ++]
+  //   }, // [!code ++]
+  //   onError: (error) => { // [!code ++]
+  //     console.error('交易失败:', error); // [!code ++]
+  //   }, // [!code ++]
+  // }); // [!code ++]
+
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
 
   const handleTransfer = () => {
     const tx = new Transaction();
-
-    const [coin] = tx.splitCoins(tx.gas, [
-      tx.pure(BigInt(parseFloat(amount) * 1_000_000_000))
-    ]);
-
+    const mist = BigInt(Math.floor(parseFloat(amount || '0') * 1_000_000_000));
+    const [coin] = tx.splitCoins(tx.gas, [tx.pure(mist)]);
     tx.transferObjects([coin], tx.pure.address(recipient));
-
-    signAndExecute(
-      {
-        transaction: tx,
-      },
-      {
-        onSuccess: (result) => {
-          console.log('交易成功:', result);
-          alert(`交易成功! Digest: ${result.digest}`);
-        },
-        onError: (error) => {
-          console.error('交易失败:', error);
-          alert(`交易失败: ${error.message}`);
-        },
-      }
-    );
+    signAndExecute({ transaction: tx });
   };
 
-  if (!account) {
-    return <div>请先连接钱包</div>;
-  }
+  if (!account) return <div>请先连接钱包</div>;
 
   return (
     <div>
       <h3>转账 SUI</h3>
-      <input
-        type="text"
-        placeholder="接收地址"
-        value={recipient}
-        onChange={(e) => setRecipient(e.target.value)}
-      />
-      <input
-        type="number"
-        placeholder="金额（SUI）"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
+      <input type="text" placeholder="接收地址" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
+      <input type="number" placeholder="金额（SUI）" value={amount} onChange={(e) => setAmount(e.target.value)} />
       <button onClick={handleTransfer}>发送</button>
     </div>
   );
