@@ -3,13 +3,12 @@
 > Sui TypeScript SDK 的核心客户端库 - 连接、查询和交易的基础
 
 > [!IMPORTANT] 本节重点
-> 1. 如何安装和配置 @mysten/sui？
-> 2. 如何连接到 Sui 网络？
-> 3. 如何创建和管理钱包？
-> 4. 如何查询链上数据？
-> 5. 如何构建和执行交易？
-> 6. 如何与智能合约交互？
-> 7. 如何使用 BCS 编码？
+> 1. 如何连接到 Sui 网络？
+> 2. 如何创建和管理钱包？
+> 3. 如何查询链上数据？
+> 4. 如何构建和执行交易？ 
+> 5. 如何与智能合约交互？ 
+> 6. 如何使用 BCS 编码？
 
 ## 快速开始
 
@@ -460,11 +459,9 @@ async function transferSui(
 ) {
   const tx = new Transaction();
 
-  // 从 gas 币中分割指定数量
-  const [coin] = tx.splitCoins(tx.gas, [tx.pure(amount)]);
+  const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(amount)]);
 
-  // 转移给接收者
-  tx.transferObjects([coin], tx.pure.address(recipient));
+  tx.transferObjects([coin], tx.pure.address(receiptAddress));
 
   // 签名并执行
   const result = await client.signAndExecuteTransaction({
@@ -509,6 +506,10 @@ async function transferObject(
   return result;
 }
 ```
+
+> [!DANGER] 转移对象不允许转移 SUI 代币
+> 因为 SUI 是特殊系统币，不能用普通的 transferObjects() 去转移 `Coin<SUI>` 对象。
+
 
 ### 合并和拆分代币
 
@@ -566,9 +567,9 @@ async function splitCoin(
 
 ### 调用智能合约
 
-通过 `moveCall` 执行模块函数，实现业务逻辑与状态更新。
+:::code-group
 
-```typescript
+```typescript [模版]
 // 调用合约函数
 async function callContract(
   senderKeypair: Ed25519Keypair,
@@ -603,8 +604,71 @@ async function callContract(
 
   return result;
 }
+```
 
-// 调用带类型参数的函数
+```typescript [调用mint函数示范]
+async function main() {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::my_token::mint`,
+    arguments: [
+      tx.object(TOKEN_OBJECT_ID),
+      tx.pure.u64(1_000_000_000n), // 铸造 1000 个代币
+      tx.pure.address(RECEIPT_ADDRESS),
+    ],
+  });
+
+  const result = await client.signAndExecuteTransaction({
+    signer: keypair,
+    transaction: tx,
+    options: { showEffects: true, showEvents: true, showObjectChanges: true },
+  });
+
+  console.log("交易摘要:", result.digest);
+  console.log("状态:", result.effects?.status);
+}
+```
+
+```move [move代码]
+module hello_sui::my_token {
+    // 伪代码
+    public entry fun mint(
+        cap: &mut TreasuryCap<MY_TOKEN>,
+        amount: u64,
+        recipient: address,
+        ctx: &mut TxContext,
+    ) {
+        let minted_coin = coin::mint(cap, amount, ctx);
+        transfer::public_transfer(minted_coin, recipient);
+    }
+}
+```
+
+:::
+
+`tx.pure(...)` 是 Sui TypeScript SDK（`@mysten/sui/transactions`）里最最最最最重要的一个函数，99% 的 Move 函数参数都要靠它来传。
+
+> 把 JavaScript 中的普通值（number、string、bigint、boolean、数组、向量等）包装成 Move 虚拟机能理解的“纯数据”（pure value），让它可以作为 Move 函数的输入参数。
+
+**官方推荐的 5 种常用写法:**
+
+```typescript
+tx.pure(123)                    // 自动推导为 u64（< 2³¹ 时）
+tx.pure.u64(1000n)              // 强制 u64（推荐大数字都这么写）
+tx.pure.address("0x123...")     // 地址专用（最常用）
+tx.pure.string("Hello Sui")     // 字符串专用
+tx.pure.bool(true)              // 布尔值
+tx.pure.vector('u64', [1,2,3])  // 向量/数组
+tx.pure([1, 2, 3])              // 自动推导为 vector<u64>
+tx.pure.option(123)             // OptionSome(123)
+tx.pure.option(null)            // OptionNone
+```
+
+如果调用合约函数需要传入范型类型，那就需要额外的 `typeArguments` 参数。
+
+> 如果 Move 函数定义里有未被具体类型“钉死”的 `<T>`（即真正的泛型参数），调用时就必须传 `typeArguments`，否则一定报错 NUMBER_OF_TYPE_ARGUMENTS_MISMATCH。
+
+```typescript
 async function callContractWithTypeArgs(
   senderKeypair: Ed25519Keypair,
   packageId: string
@@ -613,7 +677,7 @@ async function callContractWithTypeArgs(
 
   tx.moveCall({
     target: `${packageId}::my_module::generic_function`,
-    typeArguments: ['0x2::sui::SUI'],  // 类型参数
+    typeArguments: ['0x2::sui::SUI'],  // [!code ++]
     arguments: [
       tx.pure(100),
       tx.object('0x...')
@@ -630,8 +694,6 @@ async function callContractWithTypeArgs(
 ```
 
 ### 链式调用
-
-在同一交易中串联多个操作，减少上链次数提升效率。
 
 ```typescript
 async function chainedCalls(senderKeypair: Ed25519Keypair) {
@@ -1110,15 +1172,18 @@ async function complexTransaction(senderKeypair: Ed25519Keypair) {
 规范化与校验 Sui 地址，确保输入合法与兼容。
 
 ```typescript
-import { normalizeSuiAddress, isValidSuiAddress } from '@mysten/sui/utils';
+import { normalizeSuiAddress, isValidSuiAddress } from "@mysten/sui/utils";
 
 // 规范化地址
-const normalized = normalizeSuiAddress('0x2');
-console.log(normalized);  // '0x0000000000000000000000000000000000000000000000000000000000000002'
+const normalized = normalizeSuiAddress("0x2");
+console.log(normalized); // '0x0000000000000000000000000000000000000000000000000000000000000002'
 
 // 验证地址
-const isValid = isValidSuiAddress('0x2');
-console.log(isValid);  // true
+const isValid = isValidSuiAddress(normalized);
+console.log(isValid); // true
+
+const isValid2 = isValidSuiAddress("0x2");
+console.log(isValid2); // false
 ```
 
 ### 单位转换
@@ -1778,8 +1843,6 @@ async function swap(
 
 ### 1. 错误处理
 
-统一捕获与提示，分类问题并给出可恢复路径。
-
 ```typescript
 async function safeTransaction(senderKeypair: Ed25519Keypair) {
   try {
@@ -1810,8 +1873,6 @@ async function safeTransaction(senderKeypair: Ed25519Keypair) {
 
 ### 2. Gas 优化
 
-合理设置预算、减少存储成本，控制费用与性能平衡。
-
 ```typescript
 // 批量操作减少 gas
 async function batchTransfer(
@@ -1836,8 +1897,6 @@ async function batchTransfer(
 ```
 
 ### 3. 重试机制
-
-采用指数退避与幂等策略，提升操作成功率。
 
 ```typescript
 async function executeWithRetry<T>(
@@ -1865,8 +1924,6 @@ const result = await executeWithRetry(async () => {
 ```
 
 ### 4. 环境配置
-
-规范网络、密钥与依赖配置，减少环境相关问题。
 
 ```typescript
 // config.ts
