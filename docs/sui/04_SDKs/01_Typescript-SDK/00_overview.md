@@ -21,10 +21,12 @@
 
 | 网络      | 节点                                  | 水龙头                                 |
 |---------|-------------------------------------|-------------------------------------|
-| local   | `http://127.0.0.1:9000` default     | `https://faucet.sui.io/`      |
-| Devnet  | `https://fullnode.devnet.sui.io:443` | `https://faucet.sui.io/` |
-| Testnet | `https://fullnode.testnet.sui.io:443` | `https://faucet.sui.io/` |
+| local   | `http://127.0.0.1:9000` 默认     | `http://127.0.0.1:9123/v2/gas`      |
+| Devnet  | `https://fullnode.devnet.sui.io:443` | `https://faucet.devnet.sui.io/v2/gas` |
+| Testnet | `https://fullnode.testnet.sui.io:443` | `https://faucet.devnet.sui.io/v2/gas` |
 | Mainnet | `https://fullnode.mainnet.sui.io:443` | `null`                              |
+
+web 通用水龙头网址：[https://faucet.sui.io/](https://faucet.sui.io/)
 
 > [!WARNING] 生产环境防范
 > 生产应用使用专用节点/共享服务，而不是公共端点。Mysten Labs 维护的公共端点（`fullnode.<NETWORK>.sui.io：443`）受速率限制，每 30 秒左右只支持 100 个请求。不要在流量大的生产应用中使用公共端点。

@@ -13,7 +13,11 @@
 
 ## 快速开始
 
+概览客户端的安装与最小用法，帮助你快速连上网络并发起基本查询。
+
 ### 创建项目
+
+使用脚手架或手动配置 TypeScript 环境与依赖，准备开发基础设施。
 
 ```bash
 # 创建新项目
@@ -29,6 +33,8 @@ npx tsc --init
 ```
 
 ### 基础示例
+
+展示用 `SuiClient` 建立连接并进行简单读取的最小代码片段。
 
 创建 `src/index.ts`：
 
@@ -63,7 +69,11 @@ npx ts-node src/index.ts
 
 ## 连接到 Sui 网络
 
+讲解如何创建客户端并选择合适的网络端点，包括官方与自定义 RPC。
+
 ### 创建客户端
+
+通过 `SuiClient` 连接到 devnet、testnet、mainnet 或自定义节点。
 
 ```typescript
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
@@ -89,6 +99,8 @@ const customClient = new SuiClient({
 
 ### 网络 URL
 
+列出常用网络地址与自定义端点的配置方式，便于环境切换。
+
 ```typescript
 import { getFullnodeUrl } from '@mysten/sui/client';
 
@@ -108,7 +120,11 @@ console.log(urls);
 
 ## 钱包管理
 
+覆盖密钥对生成与导入，以及不同签名算法的使用与差异。
+
 ### 创建新钱包
+
+生成 Ed25519 密钥对与地址，用于开发与测试场景。
 
 ```typescript
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -130,6 +146,8 @@ const keypairFromMnemonic = Ed25519Keypair.deriveKeypair(mnemonic);
 
 ### 导入现有钱包
 
+支持通过私钥、助记词等方式导入已有账户，保持兼容性。
+
 ```typescript
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
@@ -147,6 +165,8 @@ const keypair2 = Ed25519Keypair.fromSecretKey(
 
 ### 多种密钥算法
 
+比较 Ed25519、Secp256r1 等算法的特性与适用场景，选择合适的方案。
+
 ```typescript
 // Ed25519（推荐）
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -163,7 +183,11 @@ const secp256r1 = new Secp256r1Keypair();
 
 ## 查询链上数据
 
+使用客户端读取余额、对象、交易与事件，支持筛选与分页。
+
 ### 查询余额
+
+获取账户 SUI 余额并演示单位转换，展示资产概况。
 
 ```typescript
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
@@ -204,6 +228,8 @@ async function getAllBalances(address: string) {
 ```
 
 ### 查询拥有的对象
+
+列出账户持有对象，并按需返回类型、内容与显示信息。
 
 ```typescript
 // 查询所有拥有的对象
@@ -266,6 +292,8 @@ async function getObjectsByType(address: string, type: string) {
 
 ### 查询对象详情
 
+查看对象的完整细节，包括类型、内容、所有者与版本。
+
 ```typescript
 // 查询单个对象
 async function getObject(objectId: string) {
@@ -322,6 +350,8 @@ async function getDynamicFieldObject(
 
 ### 查询交易
 
+根据过滤条件查询交易区块，分析执行状态与摘要。
+
 ```typescript
 // 查询交易详情
 async function getTransaction(digest: string) {
@@ -372,6 +402,8 @@ async function getTransactionHistory(address: string) {
 
 ### 查询事件
 
+按包、模块或类型过滤事件，并解析结构化数据以便处理。
+
 ```typescript
 // 查询事件
 async function queryEvents(packageId: string) {
@@ -411,7 +443,11 @@ async function queryEventsBySender(sender: string) {
 
 ## 构建和执行交易
 
+使用可编程交易块进行转账与合约调用，统一签名与执行流程。
+
 ### 基础转账
+
+拆分 Gas 并转移到目标地址，由钱包签名与执行，返回交易摘要。
 
 ```typescript
 import { Transaction } from '@mysten/sui/transactions';
@@ -449,6 +485,8 @@ async function transferSui(
 
 ### 转移对象
 
+将对象所有权安全地转移给指定地址，适用于 NFT 与通用对象。
+
 ```typescript
 async function transferObject(
   senderKeypair: Ed25519Keypair,
@@ -473,6 +511,8 @@ async function transferObject(
 ```
 
 ### 合并和拆分代币
+
+合并或拆分 Coin，灵活管理余额形态与支付粒度。
 
 ```typescript
 // 合并代币
@@ -525,6 +565,8 @@ async function splitCoin(
 ```
 
 ### 调用智能合约
+
+通过 `moveCall` 执行模块函数，实现业务逻辑与状态更新。
 
 ```typescript
 // 调用合约函数
@@ -589,6 +631,8 @@ async function callContractWithTypeArgs(
 
 ### 链式调用
 
+在同一交易中串联多个操作，减少上链次数提升效率。
+
 ```typescript
 async function chainedCalls(senderKeypair: Ed25519Keypair) {
   const tx = new Transaction();
@@ -621,6 +665,8 @@ async function chainedCalls(senderKeypair: Ed25519Keypair) {
 ```
 
 ### 设置 Gas 预算和赞助
+
+设定合理的 Gas 预算，并支持赞助交易的 Gas 支付者配置。
 
 ```typescript
 // 设置 gas 预算
@@ -677,89 +723,19 @@ async function sponsoredTransaction(
 }
 ```
 
-## 订阅事件
-
-### 订阅新交易
-
-```typescript
-// 订阅所有交易
-async function subscribeTransactions() {
-  const unsubscribe = await client.subscribeTransaction({
-    filter: {
-      FromAddress: '0x...'
-    },
-    onMessage: (tx) => {
-      console.log('新交易:', tx);
-    }
-  });
-
-  // 取消订阅
-  // unsubscribe();
-
-  return unsubscribe;
-}
-```
-
-### 订阅事件
-
-```typescript
-// 订阅特定包的事件
-async function subscribeEvents(packageId: string) {
-  const unsubscribe = await client.subscribeEvent({
-    filter: {
-      Package: packageId
-    },
-    onMessage: (event) => {
-      console.log('收到事件:');
-      console.log('  类型:', event.type);
-      console.log('  发送者:', event.sender);
-      console.log('  数据:', event.parsedJson);
-      console.log('  时间戳:', event.timestampMs);
-    }
-  });
-
-  return unsubscribe;
-}
-
-// 订阅特定模块的事件
-async function subscribeModuleEvents(packageId: string, moduleName: string) {
-  const unsubscribe = await client.subscribeEvent({
-    filter: {
-      MoveEventModule: {
-        package: packageId,
-        module: moduleName
-      }
-    },
-    onMessage: (event) => {
-      console.log('模块事件:', event);
-    }
-  });
-
-  return unsubscribe;
-}
-
-// 订阅特定类型的事件
-async function subscribeEventType(eventType: string) {
-  const unsubscribe = await client.subscribeEvent({
-    filter: {
-      MoveEventType: eventType
-    },
-    onMessage: (event) => {
-      console.log('类型事件:', event);
-    }
-  });
-
-  return unsubscribe;
-}
-```
-
 ## BCS 编码和解码
 
+解释 BCS 的用途，并在参数与数据解析中应用，保证类型安全与性能。
+
 ### 什么是 BCS?
+
+简述 BCS 的特性与优势，为后续编码与解析做铺垫。
 
 BCS (Binary Canonical Serialization) 是 Sui 用于序列化和反序列化数据的标准格式。
 
 ### 基础 BCS 操作
+
+演示编码/解码基础类型与向量，掌握常见数据结构处理。
 
 ```typescript
 import { bcs } from '@mysten/sui/bcs';
@@ -780,6 +756,8 @@ const encodedVector = bcs.vector(bcs.u64()).serialize([1n, 2n, 3n]).toBytes();
 ```
 
 ### 自定义结构体编码
+
+定义并序列化业务结构体，在合约交互中传递复杂参数。
 
 ```typescript
 import { bcs } from '@mysten/sui/bcs';
@@ -809,6 +787,8 @@ console.log('解码后:', decoded);
 ```
 
 ### 编码交易参数
+
+将复杂参数编码注入 `moveCall`，确保兼容性与确定性。
 
 ```typescript
 import { bcs } from '@mysten/sui/bcs';
@@ -843,6 +823,8 @@ async function callWithBcsArgs(senderKeypair: Ed25519Keypair) {
 ```
 
 ### 解析链上数据
+
+解析对象与事件的 BCS 内容，提取结构化信息用于展示与分析。
 
 ```typescript
 import { bcs } from '@mysten/sui/bcs';
@@ -879,7 +861,11 @@ async function parseObjectData(objectId: string) {
 
 ## 高级功能
 
+涵盖批量、DryRun、DevInspect、多签与高级 PTx 用法等进阶主题。
+
 ### 批量操作
+
+在一笔交易中执行多个操作，降低成本并提升吞吐。
 
 ```typescript
 // 批量转账
@@ -936,6 +922,8 @@ async function batchObjectOperations(
 
 ### Dry Run（模拟执行）
 
+不上链模拟交易，评估 Gas 与效果，辅助调试与成本估算。
+
 ```typescript
 // 模拟执行交易,不会真正发送到链上
 async function dryRunTransaction(
@@ -968,6 +956,8 @@ async function dryRunTransaction(
 
 ### 开发检查 (Dev Inspect)
 
+深入检查状态变更与函数执行细节，定位问题与优化逻辑。
+
 ```typescript
 // 用于调试和测试,可以查看函数返回值
 async function devInspect(sender: string) {
@@ -992,6 +982,8 @@ async function devInspect(sender: string) {
 ```
 
 ### 多签钱包
+
+构建多签地址并联合签名，提升安全性与治理能力。
 
 ```typescript
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -1059,6 +1051,8 @@ async function multiSigTransaction(
 
 ### 可编程交易块高级用法
 
+使用高级输入与控制流增强交易能力，适配复杂业务需求。
+
 ```typescript
 // 链式调用和复杂逻辑
 async function complexTransaction(senderKeypair: Ed25519Keypair) {
@@ -1109,7 +1103,11 @@ async function complexTransaction(senderKeypair: Ed25519Keypair) {
 
 ## 实用工具
 
+提供地址、单位、Gas、代币操作与状态监控等辅助方法集合。
+
 ### 地址格式化
+
+规范化与校验 Sui 地址，确保输入合法与兼容。
 
 ```typescript
 import { normalizeSuiAddress, isValidSuiAddress } from '@mysten/sui/utils';
@@ -1124,6 +1122,8 @@ console.log(isValid);  // true
 ```
 
 ### 单位转换
+
+在 `SUI` 与 `MIST` 间转换，统一数值显示与计算。
 
 ```typescript
 import { MIST_PER_SUI } from '@mysten/sui/utils';
@@ -1144,6 +1144,8 @@ console.log(suiToMist(1));  // 1000000000n
 ```
 
 ### 获取 Gas 币
+
+从 Faucet 申请测试币或管理 Gas，保障交易可执行。
 
 ```typescript
 // 获取用于支付 gas 的币
@@ -1190,6 +1192,8 @@ async function selectOptimalGasCoin(address: string, requiredAmount: bigint) {
 ```
 
 ### 代币操作工具
+
+封装常用代币查询与处理，提升代码复用与可读性。
 
 ```typescript
 // 获取特定代币的所有币对象
@@ -1249,6 +1253,8 @@ async function getCoinsToMerge(
 
 ### 交易状态检查
 
+轮询或订阅监控交易完成状态，改善用户反馈体验。
+
 ```typescript
 // 等待交易确认
 async function waitForTransaction(
@@ -1306,6 +1312,8 @@ function getDeletedObjects(tx: any): string[] {
 
 ### 性能优化工具
 
+使用缓存与批处理降低请求开销，提升前端响应速度。
+
 ```typescript
 // 批量查询多个地址的余额
 async function batchGetBalances(addresses: string[]) {
@@ -1356,6 +1364,8 @@ const cachedGetObject = memoize(
 ```
 
 ### 错误处理工具
+
+通用重试与错误分类捕获，提升健壮性与可维护性。
 
 ```typescript
 // 自定义错误类型
@@ -1441,7 +1451,11 @@ async function safeExecuteTransaction(
 
 ## 完整示例
 
+端到端案例整合查询、交易与事件，作为实战参考。
+
 ### NFT 管理系统
+
+演示铸造、转移与事件订阅等流程，覆盖常见功能模块。
 
 ```typescript
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
@@ -1693,6 +1707,8 @@ async function exampleUsage() {
 
 ### DeFi 交互示例
 
+展示代币交换与质押等交互，体现复杂交易的组织方式。
+
 ```typescript
 // 添加流动性
 async function addLiquidity(
@@ -1758,7 +1774,11 @@ async function swap(
 
 ## 最佳实践
 
+总结错误处理、Gas 优化与环境配置等经验，指导生产实践。
+
 ### 1. 错误处理
+
+统一捕获与提示，分类问题并给出可恢复路径。
 
 ```typescript
 async function safeTransaction(senderKeypair: Ed25519Keypair) {
@@ -1790,6 +1810,8 @@ async function safeTransaction(senderKeypair: Ed25519Keypair) {
 
 ### 2. Gas 优化
 
+合理设置预算、减少存储成本，控制费用与性能平衡。
+
 ```typescript
 // 批量操作减少 gas
 async function batchTransfer(
@@ -1814,6 +1836,8 @@ async function batchTransfer(
 ```
 
 ### 3. 重试机制
+
+采用指数退避与幂等策略，提升操作成功率。
 
 ```typescript
 async function executeWithRetry<T>(
@@ -1842,6 +1866,8 @@ const result = await executeWithRetry(async () => {
 
 ### 4. 环境配置
 
+规范网络、密钥与依赖配置，减少环境相关问题。
+
 ```typescript
 // config.ts
 export const config = {
@@ -1866,7 +1892,11 @@ const keypair = Ed25519Keypair.fromSecretKey(decodedKey.secretKey);
 
 ## 常见问题
 
+汇总高频疑问与实操答案，快速定位问题与方案。
+
 ### Q1: 如何获取测试币？
+
+说明 Faucet 使用方式与常见错误，确保账户具备初始 Gas。
 
 **A:** 在 devnet 或 testnet 上，可以使用水龙头：
 
@@ -1877,29 +1907,43 @@ const keypair = Ed25519Keypair.fromSecretKey(decodedKey.secretKey);
 // 方式 2：访问 Web 水龙头
 // https://faucet.sui.io/
 
-// 方式 3：使用 SDK 请求
-async function requestFromFaucet(address: string) {
-  const response = await fetch('https://faucet.devnet.sui.io/gas', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      FixedAmountRequest: {
-        recipient: address
-      }
-    })
-  });
+// 方式 3：使用 SDK 请求 [Testnet不成功]
+async function requestFromFaucet(address) {
+  const url = "https://faucet.devnet.sui.io/v2/gas"; // 添加 /v2
+  const requestBody = {
+    FixedAmountRequest: {
+      recipient: address,
+      amount: 1000000000, // 1 SUI in MIST (10^9)
+    },
+  };
 
-  if (!response.ok) {
-    throw new Error(`水龙头请求失败: ${response.statusText}`);
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text(); // 读取错误体以调试
+      throw new Error(
+        `水龙头请求失败: ${response.status} - ${response.statusText} - ${errorData}`
+      );
+    }
+
+    const data = await response.json();
+    console.log("✅ 测试币已发送:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ 水龙头请求出错:", error);
+    throw error;
   }
-
-  const data = await response.json();
-  console.log('✅ 测试币已发送:', data);
-  return data;
 }
 ```
 
 ### Q2: 交易失败如何调试？
+
+结合 DryRun/DevInspect 与错误日志定位问题根因。
 
 **A:** 系统化的调试方法：
 
@@ -1958,6 +2002,8 @@ async function debugTransaction(
 
 ### Q3: 如何处理大数值？
 
+推荐使用 `BigInt` 与转换工具，避免精度与显示问题。
+
 **A:** 使用 BigInt 和正确的转换：
 
 ```typescript
@@ -1989,6 +2035,8 @@ console.log(`发送: ${sendAmount} MIST`);
 ```
 
 ### Q4: 如何监听特定地址的交易？
+
+提供订阅与轮询两种方案，兼顾实时性与兼容性。
 
 **A:** 多种监听方式：
 
@@ -2063,6 +2111,8 @@ await poller.start(address, (tx) => {
 
 ### Q5: 如何估算 Gas 费用？
 
+使用 Dry Run 获取成本并计算总额，提前评估支出。
+
 **A:** 使用 Dry Run 准确估算：
 
 ```typescript
@@ -2116,6 +2166,8 @@ console.log('  总成本:', mistToSui(BigInt(gasCost.totalCost)), 'SUI');
 ```
 
 ### Q6: 如何处理交易签名和多签？
+
+介绍单签、多签与分离签名执行的适用场景与流程。
 
 **A:** 完整的签名流程：
 
@@ -2205,6 +2257,8 @@ async function multiSignatureExample() {
 
 ### Q7: 如何优化查询性能？
 
+采用分页、缓存与批量查询策略，降低延迟与负载。
+
 **A:** 多种优化策略：
 
 ```typescript
@@ -2290,6 +2344,8 @@ async function efficientPagination(owner: string) {
 ```
 
 ### Q8: 如何处理网络错误和重试？
+
+分类错误并应用重试与回退策略，提高系统韧性。
 
 **A:** 实现健壮的错误处理：
 
@@ -2380,6 +2436,8 @@ async function safeRequest<T>(fn: () => Promise<T>): Promise<T> {
 ```
 
 ## 参考资源
+
+链接到官方文档与示例仓库，便于进一步学习与实践。
 
 - [Sui TypeScript SDK 官方文档](https://sdk.mystenlabs.com/typescript)
 - [API 参考](https://sui-typescript-docs.vercel.app/)

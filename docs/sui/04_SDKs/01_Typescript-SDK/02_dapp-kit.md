@@ -1,6 +1,6 @@
 # Dapp Kit
 
-> 构建 Sui dApp 前端的完整 React 工具包
+> [构建 Sui dApp 前端的完整 React 工具包](https://sdk.mystenlabs.com/dapp-kit)
 
 > [!IMPORTANT] 本节重点
 > 1. 什么是 dApp Kit？为什么需要它？
@@ -78,7 +78,11 @@ export default App;
 
 ## 连接钱包
 
+展示如何在前端连接 Sui 钱包，并管理账户与连接状态，支持内置组件与自定义交互。
+
 ### 使用钱包连接按钮
+
+使用内置的 `ConnectButton` 快速集成钱包连接流程，适合入门与常见场景。
 
 ```typescript
 import { ConnectButton, useCurrentAccount } from '@mysten/dapp-kit';
@@ -101,6 +105,8 @@ function WalletSection() {
 ```
 
 ### 自定义钱包连接
+
+通过 Hooks 手动控制连接、断开与选择钱包，满足自定义 UI 与交互逻辑需求。
 
 ```typescript
 import {
@@ -134,11 +140,10 @@ function CustomWalletConnect() {
         <button
           key={wallet.name}
           onClick={() => connect({ wallet })}
-          disabled={!wallet.isInstalled}
+          disabled={!wallet.name}
         >
           <img src={wallet.icon} alt={wallet.name} width="32" height="32" />
           {wallet.name}
-          {!wallet.isInstalled && ' (未安装)'}
         </button>
       ))}
     </div>
@@ -147,6 +152,8 @@ function CustomWalletConnect() {
 ```
 
 ### 钱包状态管理
+
+读取当前钱包、账户与连接状态，并支持多账户切换，便于动态渲染。
 
 ```typescript
 import {
@@ -205,7 +212,11 @@ function WalletInfo() {
 
 ## 查询链上数据
 
+使用查询 Hooks 读取余额、对象、交易等链上信息，支持分页与细粒度字段选择。
+
 ### 查询余额
+
+获取当前账户的 SUI 余额与币对象数量，适合展示资产概览。
 
 ```typescript
 import { useBalance, useCurrentAccount } from '@mysten/dapp-kit';
@@ -231,6 +242,8 @@ function Balance() {
 ```
 
 ### 查询所有代币余额
+
+按代币类型列出账户持有的所有余额，用于资产明细与统计。
 
 ```typescript
 import { useSuiClientQuery, useCurrentAccount } from '@mysten/dapp-kit';
@@ -259,6 +272,8 @@ function AllBalances() {
 ```
 
 ### 查询拥有的对象
+
+列出账户拥有的对象集合，并按需展示类型、内容与 Display 字段。
 
 ```typescript
 import { useSuiClientQuery, useCurrentAccount } from '@mysten/dapp-kit';
@@ -301,6 +316,8 @@ function OwnedObjects() {
 
 ### 查询对象详情
 
+查询单个对象的完整详细信息，包括类型、内容、所有者与显示数据。
+
 ```typescript
 import { useSuiClientQuery } from '@mysten/dapp-kit';
 
@@ -327,6 +344,8 @@ function ObjectDetail({ objectId }: { objectId: string }) {
 ```
 
 ### 查询交易历史
+
+按地址过滤并分页获取交易记录，可查看时间、摘要与执行状态。
 
 ```typescript
 import { useSuiClientQuery, useCurrentAccount } from '@mysten/dapp-kit';
@@ -364,7 +383,11 @@ function TransactionHistory() {
 
 ## 发送交易
 
+使用 dApp Kit 的钱包钩子与交易 API 在前端发起并执行链上交易，涵盖转账、合约调用、仅签名与状态反馈等常见场景。
+
 ### 基础转账
+
+最常见的场景：向指定地址转账 SUI。通过 `Transaction` 构建交易，由用户钱包签名并执行，成功后返回 `digest` 等结果。
 
 ```typescript
 import { Transaction } from '@mysten/sui/transactions';
@@ -374,6 +397,18 @@ import { useState } from 'react';
 function Transfer() {
   const account = useCurrentAccount();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  /**
+   * const { mutate: signAndExecute } = useSignAndExecuteTransaction({
+    onSuccess: (result) => {
+      console.log("交易成功:", result);
+      alert(`交易成功! Digest: ${result.digest}`);
+    },
+    onError: (error) => {
+      console.error("交易失败:", error);
+      alert(`交易失败: ${error.message}`);
+    },
+  });
+   */
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
 
@@ -389,9 +424,6 @@ function Transfer() {
     signAndExecute(
       {
         transaction: tx,
-        options: {
-          showEffects: true,
-        },
       },
       {
         onSuccess: (result) => {
@@ -433,6 +465,8 @@ function Transfer() {
 
 ### 调用智能合约
 
+调用 Move 模块中的函数执行业务逻辑（如铸造 NFT）。使用 `tx.moveCall` 传入参数，由钱包签名并执行，按需读取返回变化。
+
 ```typescript
 import { Transaction } from '@mysten/sui/transactions';
 import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
@@ -455,10 +489,6 @@ function MintNFT({ packageId }: { packageId: string }) {
     signAndExecute(
       {
         transaction: tx,
-        options: {
-          showEffects: true,
-          showObjectChanges: true,
-        },
       },
       {
         onSuccess: (result) => {
@@ -489,6 +519,8 @@ function MintNFT({ packageId }: { packageId: string }) {
 ```
 
 ### 仅签名（不执行）
+
+当需要后端或自定义执行流程时，仅请求钱包完成签名，保留 `bytes` 与 `signature`，稍后在服务端或自定义客户端执行。
 
 ```typescript
 import { Transaction } from '@mysten/sui/transactions';
@@ -521,6 +553,8 @@ function SignOnly() {
 
 ### 带加载状态的交易
 
+在执行期间呈现加载状态与按钮禁用，执行成功或失败后给出明确反馈，提升交互体验。
+
 ```typescript
 import { Transaction } from '@mysten/sui/transactions';
 import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
@@ -552,7 +586,11 @@ function TransferWithLoading() {
 
 ## React Hooks API
 
+dApp Kit 提供钱包、查询与交易相关的 Hooks，统一管理状态与网络交互。
+
 ### 钱包 Hooks
+
+用于连接/断开、读取当前钱包与账户、列出钱包与账户、切换账户等操作。
 
 ```typescript
 // 连接钱包
@@ -578,6 +616,8 @@ const { mutate: switchAccount } = useSwitchAccount();
 ```
 
 ### 查询 Hooks
+
+封装对 Sui 客户端的查询调用，支持传参、分页、缓存与加载/错误状态。
 
 ```typescript
 // 通用查询 Hook
@@ -606,6 +646,8 @@ const {
 
 ### 交易 Hooks
 
+用于签名并执行交易或仅签名，结合回调处理成功与失败结果。
+
 ```typescript
 // 签名并执行交易
 const { mutate: signAndExecute, isPending } = useSignAndExecuteTransaction();
@@ -618,6 +660,8 @@ const { mutate: executeTransaction } = useExecuteTransaction();
 ```
 
 ### 自定义 Hook 示例
+
+根据业务需要组合与封装现有 Hooks，形成更易复用的应用级逻辑。
 
 ```typescript
 import { useSuiClientQuery, useCurrentAccount } from '@mysten/dapp-kit';
@@ -665,7 +709,11 @@ function MyNFTs() {
 
 ## 完整示例
 
+通过可运行的页面示例演示从连接到查询、交易的端到端流程。
+
 ### NFT 市场 dApp
+
+集成钱包与交易，支持查询上架、购买与持有的 NFT，展示常见交互模式。
 
 ```typescript
 import { useState } from 'react';
@@ -840,7 +888,11 @@ export default NFTMarketplace;
 
 ## 最佳实践
 
-### 1. 错误处理
+汇总错误处理、加载状态、数据刷新与条件渲染等通用模式与建议。
+
+### 错误处理
+
+为交易与查询统一捕获错误并提示，结合重试与日志，帮助用户理解问题并快速恢复操作。
 
 ```typescript
 import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
@@ -881,7 +933,9 @@ function TransactionWithErrorHandling() {
 }
 ```
 
-### 2. 加载状态管理
+### 加载状态管理
+
+在查询与交易进行时展示加载与禁用状态，提升交互反馈与稳定性。
 
 ```typescript
 function TransactionButton() {
@@ -901,7 +955,9 @@ function TransactionButton() {
 }
 ```
 
-### 3. 数据刷新
+### 数据刷新
+
+按需触发或自动进行数据刷新，确保界面展示与链上状态保持同步。
 
 ```typescript
 import { useSuiClientQuery } from '@mysten/dapp-kit';
@@ -931,7 +987,9 @@ function DataWithRefresh() {
 }
 ```
 
-### 4. 条件渲染
+### 条件渲染
+
+根据连接状态与余额等条件渲染不同内容，提供清晰的用户指引。
 
 ```typescript
 import { useCurrentAccount, useBalance } from '@mysten/dapp-kit';
@@ -957,20 +1015,43 @@ function ConditionalContent() {
 }
 ```
 
-### 5. 自动重连
+### 自动重连
+
+应用挂载时尝试重连上次使用的钱包，并显示自动连接状态；需在 `WalletProvider` 启用 `autoConnect` 才会生效。
 
 ```typescript
-import { useAutoConnectWallet } from '@mysten/dapp-kit';
+import { WalletProvider, ConnectButton, useAutoConnectWallet } from '@mysten/dapp-kit';
+import { SuiClientProvider } from '@mysten/dapp-kit';
+import { getFullnodeUrl } from '@mysten/sui/client';
+
+const networks = {
+  devnet: { url: getFullnodeUrl('devnet') },
+};
+
+function Root() {
+  return (
+    <SuiClientProvider networks={networks} defaultNetwork="devnet">
+      <WalletProvider autoConnect> // [!code highlight]
+        <App />
+      </WalletProvider>
+    </SuiClientProvider>
+  );
+}
 
 function App() {
-  // 自动连接上次使用的钱包
-  useAutoConnectWallet();
-
-  return <YourApp />;
+  const status = useAutoConnectWallet();
+  return (
+    <div>
+      <ConnectButton />
+      <div>{status}</div>
+    </div>
+  );
 }
 ```
 
 ## 常见问题
+
+总结常见配置与使用疑问，并给出实用的解决思路与参考示例。
 
 ### Q1: 如何支持多个网络？
 
@@ -1076,10 +1157,3 @@ function TransactionWithProgress() {
   );
 }
 ```
-
-## 参考资源
-
-- [dApp Kit 官方文档](https://sdk.mystenlabs.com/dapp-kit)
-- [API 参考](https://sdk.mystenlabs.com/dapp-kit/api)
-- [示例项目](https://github.com/MystenLabs/sui/tree/main/sdk/dapp-kit/examples)
-- [React Query 文档](https://tanstack.com/query/latest)
