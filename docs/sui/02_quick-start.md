@@ -1,6 +1,6 @@
 # 入门
 
-> 从零开始搭建 Sui 开发环境并创建第一个应用，[官方入门教程 🔗](https://docs-zh.sui-book.com/guides/developer/getting-started) 
+> [从零开始搭建 Sui 开发环境并创建第一个应用](https://docs-zh.sui-book.com/guides/developer/getting-started)
 
 > [!IMPORTANT] 本节重点
 > 1. 如何安装 Sui CLI？

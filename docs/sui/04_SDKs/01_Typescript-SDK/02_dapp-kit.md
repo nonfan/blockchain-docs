@@ -44,6 +44,15 @@ pnpm add @mysten/dapp-kit @mysten/sui @tanstack/react-query
 
 ### 基础配置
 
+示例中使用的模块作用如下：
+
+- `SuiClientProvider`: 注入网络端点与 Sui 客户端实例，供后续查询与交易 Hook 使用。
+- `WalletProvider`: 管理钱包列表、连接状态与当前账户，并提供钱包 UI 组件与钱包相关 Hook 的上下文。
+- `QueryClient`/`QueryClientProvider`: 通过 React Query 提供异步数据的缓存、请求与状态管理能力。
+- `getFullnodeUrl`: 快速获取官方 `devnet/testnet/mainnet` 的 JSON-RPC URL，简化网络配置。
+- `@mysten/dapp-kit/dist/index.css`: 引入 dApp Kit 组件的基础样式，确保内置 UI 正常显示。
+- `networks` 与 `defaultNetwork`: 定义可用网络映射与默认选择，支持后续动态切换网络。
+
 创建 `src/App.tsx`：
 
 ```tsx
