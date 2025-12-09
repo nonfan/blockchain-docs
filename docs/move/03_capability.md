@@ -12,6 +12,11 @@
 ## 什么是能力系统？
 
 **能力（Abilities）** 是 Move 类型系统的核心特性，用于控制类型的行为和约束。
+快速理解：
+- `copy`：可复制的普通值；
+- `drop`：可丢弃，超出作用域自动释放；
+- `store`：可作为字段被存入其他结构体或对象；
+- `key`：可作为链上对象（带 `UID`）存入全局存储。
 
 ### 四种基本能力
 
@@ -88,8 +93,11 @@ module example::ability_rules {
 
 ## Witness 模式
 
+
+
 **Witness（见证者）** 是一种设计模式，通过类型参数确保某个操作只能由特定模块执行。
 
+> 一句话理解：通过“类型参数见证者”把权限固定在某个模块，其他模块即使知道函数也无法创建见证者从而无法调用受限操作；常用于“只能由本包初始化或铸造”的场景。
 ### 基本 Witness 模式
 
 ```move
@@ -139,6 +147,8 @@ module example::witness_pattern {
 ## One-Time Witness (OTW)
 
 **一次性见证者（OTW）** 是只能在模块初始化时创建一次的特殊 Witness。
+
+> 系统在模块 `init` 阶段只发放一次同名大写见证者，用来声明“唯一性”的能力（如唯一代币类型、唯一 Publisher）；离开 `init` 后再也无法获得。
 
 ### OTW 规则
 
@@ -238,6 +248,8 @@ module example::nft_collection {
 ## Hot Potato 模式
 
 **Hot Potato** 是一种没有任何能力的类型，必须被显式处理，无法丢弃或存储。
+
+> 返回一个没有任何能力的“临时凭据”，调用方必须在同一交易内继续消费它，借此在类型层面强制完整业务流程（如借款→还款、请求→完成）。
 
 ### 基本 Hot Potato
 
@@ -358,8 +370,13 @@ module example::flash_loan {
 ## Capability 模式
 
 **Capability（能力）** 是一种访问控制模式，通过持有特定对象来证明权限。
+区别速览：
+- `Abilities`：类型级约束，编译期决定能否复制/存储/作为对象；
+- `Capability`：运行期凭证对象，函数通过参数是否持有它来判定权限。
 
 ### AdminCap 模式
+
+用法概览：把敏感操作的函数签名写成 `(_: &AdminCap, ...)`，调用者必须持有该对象的借用引用才能通过类型检查；`AdminCap` 可转移，便于权限交接。
 
 ```move
 module example::admin_system {
@@ -430,6 +447,10 @@ module example::admin_system {
     }
 }
 ```
+使用指南：
+- 受限函数签名形如 `(_: &AdminCap, ...)` 或 `(_: &mut AdminCap, ...)`；
+- 交易发起者必须持有该对象，才能在执行时借用到它并通过权限校验；
+- 可将 `AdminCap` 转移到其他地址，实现权限移交。
 
 ### 多级权限系统
 
@@ -516,7 +537,9 @@ module example::multi_role {
 
 ## Publisher 模式
 
-**Publisher** 证明包的所有权，用于创建 Display、TransferPolicy 等。
+**Publisher** 证明包的所有权，用于创建 `Display`、`TransferPolicy` 等。
+
+> 一句话理解：在 `init` 中用 OTW 声明 `Publisher`，后续基于该身份创建标准化的展示与转移策略对象；通常在 NFT 系列初始化时一次性完成。
 
 ```move
 module example::publisher_usage {
@@ -572,6 +595,8 @@ module example::publisher_usage {
 ## TransferPolicy 和 Kiosk
 
 **TransferPolicy** 和 **Kiosk** 是 Sui 的 NFT 交易和版税系统。
+
+关系说明：`TransferPolicy` 负责定义转移规则（如版税、黑白名单），`Kiosk` 负责上架/购买并在购买时返回请求对象；必须调用 `confirm_request` 以强制执行策略，否则交易不成立。
 
 ### 创建 TransferPolicy
 
@@ -1005,7 +1030,7 @@ module example::staking_with_hot_potato {
 
 ## 最佳实践
 
-### 1. 选择合适的模式
+### 选择合适的模式
 
 ```move
 // ✅ 使用 OTW 创建唯一代币类型
@@ -1020,7 +1045,7 @@ public fun admin_only(_: &AdminCap, ...) { ... }
 struct FlashLoan { amount: u64 }  // 无任何能力
 ```
 
-### 2. 能力最小化
+### 能力最小化
 
 ```move
 // ✅ 资产类型不要随意添加 copy 或 drop
@@ -1036,7 +1061,7 @@ struct Asset has key {
 // }
 ```
 
-### 3. 权限分离
+### 权限分离
 
 ```move
 // ✅ 不同权限使用不同的 Capability
@@ -1048,7 +1073,7 @@ struct MinterCap has key { id: UID }
 // struct GodModeCap has key { id: UID }
 ```
 
-### 4. 使用 Publisher 标准化
+### 使用 Publisher 标准化
 
 ```move
 // ✅ 使用 OTW 声明 Publisher
@@ -1115,12 +1140,3 @@ transfer_policy::confirm_request(policy, request);  // 必须
 ```
 
 这确保了版税和其他规则的强制执行。
-
-## 参考资源
-
-- [Move Abilities 文档](https://move-book.com/advanced-topics/abilities.html)
-- [Sui Design Patterns](https://docs.sui.io/guides/developer/sui-101/design-patterns)
-- [Witness Pattern 详解](https://examples.sui.io/patterns/witness.html)
-- [Hot Potato Pattern](https://examples.sui.io/patterns/hot-potato.html)
-- [Transfer Policy 文档](https://docs.sui.io/standards/transfer-policy)
-- [Kiosk 文档](https://docs.sui.io/standards/kiosk)

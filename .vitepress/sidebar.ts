@@ -76,9 +76,6 @@ function smartParseFolderName(folderName: string): string {
 
   // 特殊文件夹映射
   const specialFolders: Record<string, string> = {
-    move: "Move",
-    token: "代币",
-    solidity: "Solidity",
     sdks: "SDKs",
     sdk: "SDK",
     ecosystem: "生态标准与工具链",
@@ -197,6 +194,23 @@ export function getSidebar(): Record<string, SidebarItem[]> {
         text: "IPFS",
         link: "/guide/03_ipfs",
       },
+      {
+        text: "智能合约",
+        items: [
+          {
+            text: "Solidity",
+            collapsed: true,
+            icon: "solidity.svg",
+            items: scanChain("solidity"),
+          },
+          {
+            text: "Move",
+            collapsed: true,
+            icon: "move.svg",
+            items: scanChain("move"),
+          },
+        ],
+      },
 
       // ============ 公链章节（完全自动扫描）============
       {
@@ -213,6 +227,12 @@ export function getSidebar(): Record<string, SidebarItem[]> {
             collapsed: true,
             icon: "sui.svg",
             items: scanChain("sui"),
+          },
+          {
+            text: "Aptos",
+            collapsed: true,
+            icon: "aptos.svg",
+            items: scanChain("aptos"),
           },
         ],
       },
