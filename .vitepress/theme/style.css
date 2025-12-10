@@ -68,7 +68,14 @@
     --vp-c-danger-2: var(--vp-c-red-2);
     --vp-c-danger-3: var(--vp-c-red-3);
     --vp-c-danger-soft: var(--vp-c-red-soft);
+
+    --vp-hero-glow-color: #f7931a;
 }
+
+.VPHero .image .image-container { position: relative; }
+.VPHero .image .image-src { display: block; filter: drop-shadow(0 0 28px color-mix(in oklab, var(--vp-hero-glow-color) 40%, transparent)); }
+.VPHero .image .image-container::after { content: ""; position: absolute; inset: -22px; border-radius: 22px; background: radial-gradient(260px circle at 50% 50%, color-mix(in oklab, var(--vp-hero-glow-color) 28%, transparent) 0%, transparent 62%); filter: blur(28px); opacity: .9; animation: pulse 8s ease-in-out infinite; z-index: 0; }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity:.6; } 50% { transform: scale(1.06); opacity:.95; } }
 
 /**
  * Component: Button
@@ -85,6 +92,8 @@
     --vp-button-brand-active-text: var(--vp-c-white);
     --vp-button-brand-active-bg: var(--vp-c-brand-1);
 }
+
+
 
 /**
  * Component: Home
@@ -129,6 +138,10 @@
 
 .DocSearch {
     --docsearch-primary-color: var(--vp-c-brand-1) !important;
+}
+
+.dark {
+    --vp-hero-glow-color: #ffb347;
 }
 
 strong {

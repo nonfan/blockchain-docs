@@ -12,6 +12,9 @@ hero:
     - theme: brand
       text: 开始
       link: /guide/01_overview
+    - theme: alt
+      text: GitHub
+      link: https://github.com/nonfan
 
 features:
   - icon:
