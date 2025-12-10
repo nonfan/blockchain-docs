@@ -1,17 +1,21 @@
 <script setup lang="ts">
-defineOptions({ name: 'VPSidebarItem' }) // 👈 关键
-import type { DefaultTheme } from 'vitepress/theme'
-import { computed } from 'vue'
-import VPLink from 'vitepress/dist/client/theme-default/components/VPLink.vue'
-import { useSidebarControl } from 'vitepress/dist/client/theme-default/composables/sidebar'
-import {useData} from "vitepress";
-const { site } = useData()
-const base = site.value.base
+defineOptions({ name: "VPSidebarItem" }); // 👈 关键
+import type { DefaultTheme } from "vitepress/theme";
+import { computed } from "vue";
+import VPLink from "vitepress/dist/client/theme-default/components/VPLink.vue";
+import { useSidebarControl } from "vitepress/dist/client/theme-default/composables/sidebar";
+import { useData } from "vitepress";
+const { site } = useData();
+const base = site.value.base;
 
 const props = defineProps<{
-  item: DefaultTheme.SidebarItem & { icon?: string | object }
-  depth: number
-}>()
+  item: DefaultTheme.SidebarItem & {
+    icon?: string | object;
+    badge?: string;
+    badgeVariant?: "default" | "info" | "beta" | "caution";
+  };
+  depth: number;
+}>();
 
 const {
   collapsed,
@@ -20,30 +24,32 @@ const {
   isActiveLink,
   hasActiveLink,
   hasChildren,
-  toggle
-} = useSidebarControl(computed(() => props.item))
+  toggle,
+} = useSidebarControl(computed(() => props.item));
 
-const sectionTag = computed(() => (hasChildren.value ? 'section' : `div`))
-const linkTag = computed(() => (isLink.value ? 'a' : 'div'))
-const textTag = computed(() => !hasChildren.value ? 'p' : props.depth + 2 === 7 ? 'p' : `h${props.depth + 2}`)
-const itemRole = computed(() => (isLink.value ? undefined : 'button'))
+const sectionTag = computed(() => (hasChildren.value ? "section" : `div`));
+const linkTag = computed(() => (isLink.value ? "a" : "div"));
+const textTag = computed(() =>
+  !hasChildren.value ? "p" : props.depth + 2 === 7 ? "p" : `h${props.depth + 2}`
+);
+const itemRole = computed(() => (isLink.value ? undefined : "button"));
 
 const classes = computed(() => [
   [`level-${props.depth}`],
   { collapsible: collapsible.value },
   { collapsed: collapsed.value },
-  { 'is-link': isLink.value },
-  { 'is-active': isActiveLink.value },
-  { 'has-active': hasActiveLink.value }
-])
+  { "is-link": isLink.value },
+  { "is-active": isActiveLink.value },
+  { "has-active": hasActiveLink.value },
+]);
 
 function onItemInteraction(e: MouseEvent | Event) {
-  if ('key' in e && e.key !== 'Enter') return
-  !props.item.link && toggle()
+  if ("key" in e && e.key !== "Enter") return;
+  !props.item.link && toggle();
 }
 
 function onCaretClick() {
-  props.item.link && toggle()
+  props.item.link && toggle();
 }
 </script>
 
@@ -53,7 +59,11 @@ function onCaretClick() {
       v-if="item.text"
       class="item"
       :role="itemRole"
-      v-on="item.items ? { click: onItemInteraction, keydown: onItemInteraction } : {}"
+      v-on="
+        item.items
+          ? { click: onItemInteraction, keydown: onItemInteraction }
+          : {}
+      "
       :tabindex="item.items && 0"
     >
       <div class="indicator" />
@@ -78,11 +88,35 @@ function onCaretClick() {
               :src="base + item.icon"
               class="icon"
               :alt="item.text + ' icon'"
-              @error="() => console.log('Icon load error for (link):', item.text, base + item.icon)"
-              @load="() => console.log('Icon loaded for (link):', item.text, base + item.icon)"
+              @error="
+                () =>
+                  console.log(
+                    'Icon load error for (link):',
+                    item.text,
+                    base + item.icon
+                  )
+              "
+              @load="
+                () =>
+                  console.log(
+                    'Icon loaded for (link):',
+                    item.text,
+                    base + item.icon
+                  )
+              "
             />
           </span>
           <span v-html="item.text" />
+          <span
+            v-if="item.badge"
+            :class="[
+              'badge',
+              item.badgeVariant
+                ? 'badge--' + item.badgeVariant
+                : 'badge--default',
+            ]"
+            >{{ item.badge }}</span
+          >
         </component>
       </VPLink>
 
@@ -98,11 +132,26 @@ function onCaretClick() {
             :src="base + item.icon"
             class="icon"
             :alt="item.text + ' icon'"
-            @error="() => console.log('Icon load error for:', item.text, base + item.icon)"
-            @load="() => console.log('Icon loaded for:', item.text, base + item.icon)"
+            @error="
+              () =>
+                console.log('Icon load error for:', item.text, base + item.icon)
+            "
+            @load="
+              () => console.log('Icon loaded for:', item.text, base + item.icon)
+            "
           />
         </span>
         <span v-html="item.text" />
+        <span
+          v-if="item.badge"
+          :class="[
+            'badge',
+            item.badgeVariant
+              ? 'badge--' + item.badgeVariant
+              : 'badge--default',
+          ]"
+          >{{ item.badge }}</span
+        >
       </component>
 
       <div
@@ -187,6 +236,32 @@ function onCaretClick() {
   transition: color 0.25s;
   display: flex;
   align-items: center;
+}
+.badge {
+  margin-left: 6px;
+  padding: 0 6px;
+  height: 18px;
+  line-height: 18px;
+  font-size: 12px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+}
+.badge--default {
+  background: var(--vp-c-default-soft);
+  color: var(--vp-c-default-1);
+}
+.badge--info {
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+}
+.badge--beta {
+  background: var(--vp-c-warning-soft);
+  color: var(--vp-c-warning-1);
+}
+.badge--caution {
+  background: var(--vp-c-danger-soft);
+  color: var(--vp-c-danger-1);
 }
 .VPSidebarItem.level-0 .text {
   font-weight: 700;

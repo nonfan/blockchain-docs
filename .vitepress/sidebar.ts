@@ -8,6 +8,8 @@ interface SidebarItem {
   icon?: string;
   items?: SidebarItem[];
   link?: string;
+  badge?: string;
+  badgeVariant?: "default" | "info" | "beta" | "caution";
 }
 
 const docsDir = path.join(__dirname, "../docs");
@@ -95,7 +97,13 @@ function scanChain(chainName: string): SidebarItem[] {
 
 function buildChainsSection(
   title: string,
-  chains: Array<{ text: string; icon: string; dir: string }>
+  chains: Array<{
+    text: string;
+    icon: string;
+    dir: string;
+    badge?: string;
+    badgeVariant?: "default" | "info" | "beta" | "caution";
+  }>
 ): SidebarItem {
   return {
     text: title,
@@ -103,6 +111,8 @@ function buildChainsSection(
       text: c.text,
       collapsed: true,
       icon: c.icon,
+      badge: c.badge,
+      badgeVariant: c.badgeVariant,
       items: scanChain(c.dir),
     })),
   };
@@ -142,8 +152,20 @@ export function getSidebar(): Record<string, SidebarItem[]> {
 
   const evmChains = [
     { text: "Ethereum", icon: "ethereum.svg", dir: "ethereum" },
-    { text: "Arbitrum", icon: "arbitrum.svg", dir: "arbitrum" },
-    { text: "Base", icon: "base.svg", dir: "base" },
+    {
+      text: "Arbitrum",
+      icon: "arbitrum.svg",
+      dir: "arbitrum",
+      badge: "Layer2",
+      badgeVariant: "info",
+    },
+    {
+      text: "Base",
+      icon: "base.svg",
+      dir: "base",
+      badge: "Layer2",
+      badgeVariant: "info",
+    },
     { text: "VeChain", icon: "vet.svg", dir: "vechain" },
     { text: "Monad", icon: "monad.svg", dir: "monad" },
   ];
