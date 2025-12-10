@@ -248,6 +248,18 @@ export function getSidebar(): Record<string, SidebarItem[]> {
             items: scanChain("ethereum"),
           },
           {
+            text: "Arbitrum",
+            collapsed: true,
+            icon: "arbitrum.svg",
+            items: scanChain("arbitrum"),
+          },
+          {
+            text: "Base",
+            collapsed: true,
+            icon: "base.svg",
+            items: scanChain("base"),
+          },
+          {
             text: "VeChain",
             collapsed: true,
             icon: "vet.svg",

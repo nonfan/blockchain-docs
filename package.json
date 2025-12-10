@@ -12,8 +12,8 @@
   },
   "scripts": {
     "start": "vitepress dev",
-    "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
+    "build": "vitepress build",
+    "preview": "vitepress preview"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",
