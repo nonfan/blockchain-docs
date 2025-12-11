@@ -1,4 +1,11 @@
 # 公链概览
+
+
+> [!INFO] 导航
+> [SolanaScan 区块浏览器](https://solscan.io/)
+> 
+> [Solana 官网](https://solana.com/)
+
 > 在区块链技术的迅猛发展中，Solana 凭借其卓越的性能、高吞吐量和低成本特性，迅速成为开发者与去中心化应用（DApp）优先选择的公链之一。本文将系统介绍 Solana 的架构优势、技术特性、生态系统以及开发者如何快速上手构建 DApp。
 
 ## 什么是 Solana？

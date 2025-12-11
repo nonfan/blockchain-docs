@@ -1,6 +1,12 @@
 # 公链概览
-
 > 下一代高性能 Layer 1 区块链
+
+> [!INFO] 导航
+> [SuiScan 区块浏览器](https://suiscan.xyz/)
+> 
+> [Sui 官网](https://sui.io/)
+>
+> [Sui 浏览器扩展钱包](https://chromewebstore.google.com/detail/slush-%E2%80%94-a-sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil?hl=zh-CN&utm_source=ext_sidebar)
 
 ## 什么是 Sui？
 
@@ -140,13 +146,6 @@ Move 使用能力系统控制类型的行为：
 - **BlueMove** - 综合 NFT 市场
 - **Clutchy** - NFT 交易平台
 - **Keepsake** - NFT 启动平台
-
-### 基础设施
-
-- [SuiScan](https://suiscan.xyz) - 区块浏览器
-- [SuiNS](https://suins.io/) - 域名服务
-- [Sui Wallet](https://chromewebstore.google.com/detail/slush-%E2%80%94-a-sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil?hl=zh-CN&utm_source=ext_sidebar) - 官方浏览器钱包
-- [Suiet](https://suiet.app) - 功能丰富的钱包
 
 ## 核心概念速览
 

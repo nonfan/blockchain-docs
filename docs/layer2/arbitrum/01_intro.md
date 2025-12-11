@@ -1,5 +1,10 @@
 # Layer2 概览
 
+> [!INFO] 导航
+> [Arbitrumscan 区块浏览器](https://arbiscan.io/)
+> 
+> [Arbitrum 官网](https://arbitrum.io/)
+
 **Arbitrum 是一个基于 Optimistic Rollups 技术的 Layer 2 扩展解决方案**，旨在解决以太坊网络的扩展性问题。它通过将大部分交易计算从以太坊主链转移到链下，并通过将结果提交到以太坊主链来确保最终性和安全性，从而大幅提升吞吐量和降低交易费用。
 
 ## 基本原理

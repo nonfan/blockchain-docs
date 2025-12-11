@@ -5,6 +5,12 @@ description: 介绍 Ethereum 公链的基本概念、特点、历史、共识机
 
 # 公链概览
 
+
+> [!INFO] 导航
+> [Etherscan 区块浏览器](https://etherscan.io/)
+> 
+> [Ethereum 官网](https://ethereum.org/)
+
 ## 什么是 Ethereum？
 
 Ethereum 是一个开源的、去中心化的区块链平台，支持智能合约（Smart Contracts）的开发和执行。它不仅是一个加密货币（以太币，ETH），还是一个分布式计算平台，允许开发者构建去中心化应用（DApps）。
@@ -132,10 +138,3 @@ Fusaka 是以太坊2025路线图的收官之作，下一升级（暂名“Vermon
 - **技术升级**：分片、Danksharding 等将进一步提升吞吐量。
 - **生态扩展**：DeFi、NFT、Web3 应用的持续创新。
 - **主流采用**：更多机构和企业采用 Ethereum 技术，如金融、游戏和供应链领域。
-
-## 参考资源
-
-- [官方网站](https://ethereum.org)
-- [Etherscan 区块链浏览器](https://etherscan.io)
-- [开发者文档](https://ethereum.org/en/developers/docs)
-- [DeFi 数据](https://defillama.com)

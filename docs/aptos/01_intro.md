@@ -1,5 +1,10 @@
 # 公链概览
 
+> [!INFO] 导航
+> [Aptoscan 区块浏览器](https://aptoscan.com/)
+> 
+> [Aptos 官网](https://aptos.dev)
+
 **Aptos 是一个高性能、可扩展的去中心化 Layer 1 区块链平台**，旨在解决现有区块链技术在吞吐量、延迟和可扩展性方面的限制，特别适用于大规模的去中心化应用（DApps）和企业级应用。它由曾在 Meta（前身为 Facebook） 的 Diem 项目团队开发，并且融合了新型的共识机制和编程语言设计理念。其目标是成为一个具有高吞吐量、低延迟、高安全性和强大可扩展性的区块链平台。
 
 ## 核心技术亮点
@@ -60,12 +65,4 @@
 - Move 生态与 EVM 互操作性进一步增强
 - 继续巩固“全球交易引擎 + 机构级 RWA 平台”定位
 
-## 快速上手链接
-- 官方浏览器：https://aptosexplorer.com
-- 官方文档：https://aptos.dev
-- 推荐钱包：Petra（Chrome 插件 / 移动端）
-- 链上数据仪表盘：https://aptoscan.com 或 https://dune.com/aptoslabs
-
 > Aptos 已在 2025 年完成从“高性能新公链”到“机构级交易与 RWA 平台”的华丽转型，是目前最值得持续关注的 Layer 1 之一。
-
-如需更详细的某个赛道或项目分析，随时告诉我！

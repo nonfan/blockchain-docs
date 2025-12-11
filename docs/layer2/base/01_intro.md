@@ -1,5 +1,10 @@
 # Layer2 概览
 
+> [!INFO] 导航
+> [Basescan 区块浏览器](https://basescan.org/)
+> 
+> [Base 官网](https://base.org/)
+
 Base 是 Coinbase 推出的 Ethereum Layer 2 网络，**基于 Optimism 的 OP Stack 构建**，旨在解决 Ethereum 主网的可扩展性问题，提供低成本、高吞吐的链上体验。
 
 自 2023 年 8 月主网上线以来，Base 已从一个实验性项目演变为全球领先的 L2 生态，强调用户友好性和机构级合规。作为 Coinbase 的“原生链”，它无缝整合了交易所的 1.1 亿用户资源，**推动了从 DeFi 到 SocialFi、再到 AI 代理支付的全面爆发**。以下说明不仅限于 TVL 等量化数据，还涵盖历史、技术原理、生态哲学、挑战与未来愿景等全面维度。

@@ -1,5 +1,10 @@
 # 公链概览
 
+> [!INFO] 导航
+> [Monadscan 区块浏览器](https://monadscan.com/)
+> 
+> [Monad 官网](https://www.monad.xyz/)
+
 在区块链技术快速发展的浪潮中，Monad 凭借其高性能和与以太坊虚拟机（EVM）完全兼容的特性，成为备受关注的 Layer 1 公链。本文将系统介绍 Monad 的架构优势、技术特性、生态系统以及开发者如何快速上手构建去中心化应用（DApp）。
 
 ## 什么是 Monad？

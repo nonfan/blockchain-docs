@@ -1,5 +1,10 @@
 # 公链概览
 
+> [!INFO] 导航
+> [区块浏览器](https://explore.vechain.org/)
+> 
+> [VeChain 官网](https://vechain.org/)
+
 在区块链技术快速发展的背景下，VeChain 凭借其在供应链管理和企业级应用中的独特优势，成为全球领先的公链之一。本文将系统介绍 VeChain 的架构优势、技术特性、生态系统以及开发者如何快速上手构建去中心化应用（DApp）。
 
 > [!IMPORTANT] 硬分叉 Hayabusa（2025年12月已全面生效）
