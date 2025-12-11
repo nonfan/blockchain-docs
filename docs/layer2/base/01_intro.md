@@ -34,7 +34,6 @@ Base 采用 Optimistic Rollup 模型，将交易批量压缩后提交到 Ethereu
 
 4. **欺诈证明**：BoLD（Bounded Liquidity Delay）机制，无许可挑战，提款期从 7 天缩短至最快 24 小时，提升流动性。 
 
-
 **性能原理：**
 
 交易乐观执行（假设无欺诈），仅在挑战时验证，TPS 峰值 >2000（平均 300–800）。Gas 费 <0.01 USD，得益于批量提交和 EIP-1559 动态定价。
@@ -56,7 +55,6 @@ Base 的生态不止 DeFi，还覆盖 SocialFi、GameFi 和新兴 AI 领域，�
 - **游戏与 NFT**：Treasure DAO（链游生态，TVL 8.5 亿）；Base 的低费吸引了 487,000 日 NFT 转移（2025 年 8 月峰值）。
 
 - **非数据生态**：开发者友好——Coinbase 提供 1 亿美元 Grant 基金，奖励 TVL 贡献项目；与 Y Combinator 黑客松合作，孵化 100+ AI 代理项目。哲学上，Base 推动“链上民主”：开源工具让小团队快速部署，降低中心化门槛。
-
 
 ## 优势、挑战与风险
 

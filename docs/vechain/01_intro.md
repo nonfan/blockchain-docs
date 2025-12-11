@@ -2,7 +2,7 @@
 
 在区块链技术快速发展的背景下，VeChain 凭借其在供应链管理和企业级应用中的独特优势，成为全球领先的公链之一。本文将系统介绍 VeChain 的架构优势、技术特性、生态系统以及开发者如何快速上手构建去中心化应用（DApp）。
 
-> [!IMPORTANT] Hayabusa 硬分叉（2025年12月已全面生效）
+> [!IMPORTANT] 硬分叉 Hayabusa（2025年12月已全面生效）
 > Hayabusa 升级标志着 VeChain 正式完成从“企业专属链”到“社区驱动的企业级公链”的历史性转型，在供应链、RWA、可持续性赛道继续保持全球领先。
 
 ## 什么是 VeChain？
@@ -87,7 +87,7 @@ VeChain 提供完善的开发工具和资源，降低 DApp 开发门槛：
 3. **测试与部署**：在 Testnet 测试合约，确认无误后部署至主网。
 4. **前端集成**：使用 Connex API 连接 VeWorld 或 Trust Wallet 等钱包，实现用户交互。
 
-## Hayabusa 硬分叉
+## 硬分叉 Hayabusa
 
 > VeChain 从 PoA 升级到 DPoS
 

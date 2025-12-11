@@ -155,14 +155,21 @@ export function getSidebar(): Record<string, SidebarItem[]> {
     {
       text: "Arbitrum",
       icon: "arbitrum.svg",
-      dir: "arbitrum",
+      dir: "layer2/arbitrum",
       badge: "Layer2",
       badgeVariant: "info",
     },
     {
       text: "Base",
       icon: "base.svg",
-      dir: "base",
+      dir: "layer2/base",
+      badge: "Layer2",
+      badgeVariant: "info",
+    },
+    {
+      text: "Linea",
+      icon: "linea.svg",
+      dir: "layer2/linea",
       badge: "Layer2",
       badgeVariant: "info",
     },
