@@ -12,6 +12,14 @@ interface SidebarItem {
   badgeVariant?: "default" | "info" | "beta" | "caution";
 }
 
+type ChainEntry = {
+  text: string;
+  icon: string;
+  dir: string;
+  badge?: string;
+  badgeVariant?: "default" | "info" | "beta" | "caution";
+};
+
 const docsDir = path.join(__dirname, "../docs");
 
 function extractTitle(filePath: string): string {
@@ -144,34 +152,34 @@ export function getSidebar(): Record<string, SidebarItem[]> {
     },
   ];
 
-  const l1Chains = [
+  const l1Chains: ChainEntry[] = [
     { text: "Solana", icon: "solana.svg", dir: "solana" },
     { text: "Sui", icon: "sui.svg", dir: "sui" },
     { text: "Aptos", icon: "aptos.svg", dir: "aptos" },
   ];
 
-  const evmChains = [
+  const evmChains: ChainEntry[] = [
     { text: "Ethereum", icon: "ethereum.svg", dir: "ethereum" },
     {
       text: "Arbitrum",
       icon: "arbitrum.svg",
       dir: "layer2/arbitrum",
       badge: "Layer2",
-      badgeVariant: "info",
+      badgeVariant: "beta",
     },
     {
       text: "Base",
       icon: "base.svg",
       dir: "layer2/base",
       badge: "Layer2",
-      badgeVariant: "info",
+      badgeVariant: "beta",
     },
     {
       text: "Linea",
       icon: "linea.svg",
       dir: "layer2/linea",
       badge: "Layer2",
-      badgeVariant: "info",
+      badgeVariant: "beta",
     },
     { text: "VeChain", icon: "vet.svg", dir: "vechain" },
     { text: "Monad", icon: "monad.svg", dir: "monad" },

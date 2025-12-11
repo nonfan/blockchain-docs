@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "module": "esnext",        // 或 "es2020" / "es2022"
+    "module": "es2022",        // 或 "es2020" / "es2022"
     "target": "esnext",        // 建议也用 esnext
-    "moduleResolution": "node",
+    "moduleResolution": "Bundler",
     "strict": true,
     "jsx": "preserve",
     "esModuleInterop": true,
