@@ -70,6 +70,8 @@
     --vp-c-danger-soft: var(--vp-c-red-soft);
 
     --vp-hero-glow-color: #f7931a;
+    --vp-img-border-color: rgba(0,0,0,0.08);
+    --vp-img-view-icon-color: rgba(0,0,0,0.6);
 }
 
 .VPHero .image .image-container { position: relative; }
@@ -165,6 +167,71 @@ strong {
 
 img {
     border-radius: 10px;
+    border: 1px solid var(--vp-img-border-color);
+}
+
+.zoomable-img {
+    cursor: zoom-in;
+    transition: transform .2s ease;
+    position: relative;
+    display: inline-block;
+}
+.zoomable-img:hover {
+    transform: scale(1.02);
+}
+.zoomable-img::after {
+    content: "";
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    width: 28px;
+    height: 28px;
+    background: var(--vp-img-view-icon-color);
+    opacity: 0;
+    transform: scale(0.96);
+    transition: opacity .15s ease, transform .15s ease;
+    mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 5c-5.5 0-9.5 7-9.5 7s4 7 9.5 7 9.5-7 9.5-7-4-7-9.5-7zm0 11a4 4 0 110-8 4 4 0 010 8z"/></svg>') no-repeat center / contain;
+    -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 5c-5.5 0-9.5 7-9.5 7s4 7 9.5 7 9.5-7 9.5-7-4-7-9.5-7zm0 11a4 4 0 110-8 4 4 0 010 8z"/></svg>') no-repeat center / contain;
+    pointer-events: none;
+}
+.zoomable-img:hover::after {
+    opacity: .9;
+    transform: scale(1);
+}
+.img-zoom-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.img-zoom-overlay.active {
+    display: flex;
+}
+.img-zoom-view {
+    max-width: 92vw;
+    max-height: 92vh;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    border: 1px solid var(--vp-img-border-color);
+}
+.dark .img-zoom-overlay {
+    background: rgba(0,0,0,0.86);
+}
+
+.dark {
+    --vp-img-border-color: rgba(255,255,255,0.16);
+    --vp-img-view-icon-color: rgba(255,255,255,0.85);
+}
+.dark .vp-doc img,
+.dark .VPDoc img {
+    filter: brightness(0.88) contrast(0.98) saturate(0.94);
+    transition: filter .2s ease;
+}
+.dark .img-zoom-view {
+    filter: none;
 }
 
 
