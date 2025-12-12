@@ -167,6 +167,9 @@ strong {
 
 img {
     border-radius: 10px;
+}
+
+.content-container img {
     border: 1px solid var(--vp-img-border-color);
 }
 

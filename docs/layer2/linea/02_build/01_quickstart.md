@@ -155,24 +155,24 @@ export default function App() {
 }
 ```
 
-> [!DANGER] Uncaught ReferenceError: Buffer is not defined
-> 安装依赖：缺少Node环境的buffer
-> ```bash
-> npm install buffer process
-> ```
-> 编写 `polyfills.ts` 文件在入口 `main.ts` 文件导入
-> ```ts
->import { Buffer } from "buffer";
->import process from "process";
->
->const g = globalThis as typeof globalThis & {
->   Buffer?: typeof Buffer;
->   process?: typeof process;
->   global?: typeof globalThis;
-> };
-> g.global ??= globalThis;
-> g.process ??= process;
-> g.Buffer ??= Buffer;
->```
+::: details 异常错误: Buffer is not defined
+ 安装依赖：缺少Node环境的buffer
+ ```bash
+ npm install buffer process
+ ```
+ 编写 `polyfills.ts` 文件在入口 `main.ts` 文件导入
+ ```ts
+import { Buffer } from "buffer";
+import process from "process";
 
+const g = globalThis as typeof globalThis & {
+   Buffer?: typeof Buffer;
+   process?: typeof process;
+   global?: typeof globalThis;
+ };
+ g.global ??= globalThis;
+ g.process ??= process;
+ g.Buffer ??= Buffer;
+```
+:::
 

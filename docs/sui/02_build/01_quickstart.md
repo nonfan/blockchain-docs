@@ -1,13 +1,7 @@
-# 入门
+# 快速入门
 
 > [从零开始搭建 Sui 开发环境并创建第一个应用](https://docs-zh.sui-book.com/guides/developer/getting-started)
 
-> [!IMPORTANT] 本节重点
-> 1. 如何安装 Sui CLI？
-> 2. 如何创建和管理钱包？
-> 3. 如何创建第一个 Move 项目？
-> 4. Sui CLI 常用命令有哪些？
-> 5. 如何使用 TypeScript SDK 与 Sui 交互？
 
 ## 开发环境搭建
 
@@ -520,92 +514,4 @@ sui client protocol-config
 
 # 查看验证器信息
 sui client validators
-```
-
-## 开发工具推荐
-
-### IDE 插件
-
-**VS Code:**
-- **Move Analyzer** - Move 语言支持
-- **Move Syntax** - 语法高亮
-
-安装：
-```bash
-code --install-extension move.move-analyzer
-code --install-extension damirka.move-syntax
-```
-
-### 区块浏览器
-
-- [Sui Explorer](https://explorer.sui.io)
-- [SuiScan](https://suiscan.xyz)
-- [SuiVision](https://suivision.xyz)
-
-### 开发工具
-
-- [Sui Wallet 浏览器钱包扩展](https://chromewebstore.google.com/detail/slush-%E2%80%94-a-sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil?hl=zh-CN&utm_source=ext_sidebar)
-- [Sui DevNet Faucet](https://faucet.sui.io/)
-- [Move Book](https://move-book.com/)
-
-## 常见问题
-
-### Q1: 如何在不同网络之间切换？
-
-**A:**
-```bash
-# 查看所有网络
-sui client envs
-
-# 切换到 testnet
-sui client switch --env testnet
-
-# 添加自定义网络
-sui client new-env --alias mynet --rpc https://my-rpc-url
-```
-
-### Q2: 如何导入现有钱包？
-
-**A:**
-```bash
-# 方式 1：使用助记词（需要手动导出私钥）
-# 方式 2：直接导入私钥
-sui keytool import "your_private_key_base64" ed25519
-```
-
-### Q3: Gas 不足怎么办？
-
-**A:**
-```bash
-# Devnet/Testnet：使用水龙头
-sui client faucet
-
-# Mainnet：从交易所购买 SUI 并转账
-
-# 查看 Gas 余额
-sui client gas
-```
-
-### Q4: 如何查看交易详情？
-
-**A:**
-```bash
-# 使用 CLI
-sui client transaction-block <DIGEST>
-
-# 使用浏览器
-# https://explorer.sui.io/txblock/<DIGEST>?network=devnet
-```
-
-### Q5: Move 编译错误如何调试？
-
-**A:**
-```bash
-# 查看详细错误信息
-sui move build --verbose
-
-# 常见错误：
-# 1. 依赖版本不匹配 → 检查 Move.toml 中的 Sui 版本
-# 2. 缺少能力 → 为结构体添加正确的 abilities
-# 3. 借用错误 → 检查 & 和 &mut 的使用
 ```
