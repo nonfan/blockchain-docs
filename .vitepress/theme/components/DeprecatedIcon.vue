@@ -17,18 +17,16 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue'
-
-const props = defineProps({
-  size: {
-    type: [Number, String],
-    default: 25
-  },
-  color: {
-    type: String,
-    default: '#d81e06'
+const props = withDefaults(
+  defineProps<{
+    size?: number | string;
+    color?: string;
+  }>(),
+  {
+    size: 25,
+    color: "#d81e06",
   }
-})
+);
 </script>
 
 <style scoped>

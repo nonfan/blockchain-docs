@@ -382,3 +382,5 @@ export const abi = [
 ] as const;
 ```
 :::
+
+<GithubLink link="https://github.com/nonfan/dapp-examples/tree/main/01_LineaMessageBoard" text="在 GitHub 查看示例代码" />
