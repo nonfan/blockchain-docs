@@ -1,9 +1,10 @@
-<script setup>import * as data from '../../../.vitepress/data/wagmi';
-const Hooks = data.Hooks;
-const Actions = data.Actions;
-</script>
+<!-- 删除脚本导入：不再使用 Hooks/Actions 集合数据 -->
 
 # Wagmi
+
+> [!WARNING] 版本过时
+本文档基于 Wagmi 2.x 的 API 与用法，不适用于 Wagmi 3.x。
+升级到 3.x 请参考官方迁移指南，并按新 API 调整。
 
 [Wagmi（We Are All Gonna Make It）<Badge type="tip" text="2.x"/>](https://wagmi.sh/) 是一个强大的 React 库，专为 Web3
 开发设计，提供了简洁的 API
@@ -78,6 +79,10 @@ export const config = createConfig({
 ```
 
 ```ts [添加新RPC]
+import {defineChain} from 'viem'
+import {createConfig, http} from 'wagmi'
+import {mainnet, sepolia} from 'wagmi/chains'
+import {injected} from 'wagmi/connectors'
 const monadTestnet = defineChain({
   id: 10143, // ✅ Monad Testnet Chain ID
   name: "Monad Testnet",
@@ -885,76 +890,163 @@ import {type WagmiProviderProps} from 'wagmi'
 | `initialState`     | 初始状态，以水合到 Wagmi 配置中。对 SSR 很有用。 |
 | `reconnectOnMount` | 控制组件挂载时是否自动尝试重新连接之前已连接的钱包。     |
 
-## Hooks 集合
-
-> 用于账户、钱包、合约、交易、签名、ENS 等的 React Hooks。
+## 常用 Hook
+### 账户与连接管理
+用于管理钱包连接与账户生命周期状态，获取已连接地址、连接进度与断开行为，常用于导航栏或全局状态展示。
 
 ```tsx
 import {useAccount} from 'wagmi'
-```
-
-wagmi 的 hooks 默认都会返回一个对象，常见的结构就是：
-
-```text
-{
-  data,        // 请求成功后的返回数据，比如交易结果、读取到的链上数据
-  isLoading,   // 请求是否正在进行中（loading 状态）
-  isError,     // 是否出错（true/false）
-  error,       // 具体的错误信息对象
-  isSuccess,   // 是否成功完成
-  ...
+function Profile() {
+  const {address, isConnected, status} = useAccount()
+  return <div>{isConnected ? address : status}</div>
 }
 ```
 
+```tsx
+import {useConnect, useDisconnect} from 'wagmi'
+function WalletButtons() {
+  const {connect, connectors} = useConnect()
+  const {disconnect} = useDisconnect()
+  return (
+    <>
+      {connectors.map((c) => (
+        <button key={c.uid} onClick={() => connect({connector: c})}>
+          {c.name}
+        </button>
+      ))}
+      <button onClick={() => disconnect()}>Disconnect</button>
+    </>
+  )
+}
+```
+
+### 链上数据交互
+用于读取余额与执行合约读写操作，内置缓存与请求状态管理，适合数据展示与交互按钮。
+
+```tsx
+import {useBalance} from 'wagmi'
+function Balance({address}: {address: `0x${string}`}) {
+  const {data} = useBalance({address})
+  return <div>{data?.formatted} {data?.symbol}</div>
+}
+```
+
+```tsx
+import {useReadContract, useWriteContract} from 'wagmi'
+import {abi} from './abi'
+function Token({address, user}: {address: `0x${string}`; user: `0x${string}`}) {
+  const {data} = useReadContract({
+    address,
+    abi,
+    functionName: 'balanceOf',
+    args: [user],
+  })
+  const write = useWriteContract()
+  const transfer = () =>
+    write.mutate({
+      address,
+      abi,
+      functionName: 'transfer',
+      args: [user, 100n],
+    })
+  return (
+    <>
+      <div>{data?.toString()}</div>
+      <button onClick={transfer}>Transfer</button>
+    </>
+  )
+}
+```
+
+### 事件监听与轮询
+用于监听合约事件与新区块变化；支持 WebSocket 订阅与基于 HTTP 的轮询。
+
+```tsx
+import {useWatchContractEvent} from 'wagmi'
+import {abi} from './abi'
+function EventWatcher({address}: {address: `0x${string}`}) {
+  useWatchContractEvent({
+    address,
+    abi,
+    eventName: 'Transfer',
+    onLogs(logs) {
+      console.log('Transfer logs', logs)
+    },
+  })
+  return null
+}
+```
+
+```tsx
+import {useBlockNumber} from 'wagmi'
+function BlockPolling() {
+  const {data} = useBlockNumber({
+    watch: {pollingInterval: 4000},
+  })
+  return <div>Block: {data?.toString()}</div>
+}
+```
+
+## 常用 Actions
+### 账户与配置
+基于配置的命令式调用，获取当前账户与基础链信息，适合非 React 环境或通用工具函数。
+
 ```ts
-const {data, isLoading, isError, error} = useContractRead({
-  address: '0xContractAddress',
-  abi: contractAbi,
+import {getAccount} from '@wagmi/core'
+import {config} from './config'
+const account = getAccount(config)
+```
+
+### 合约交互
+以命令式方式进行合约读写，适合服务端、脚本与大规模前端项目；支持按需引入以优化打包体积。
+
+```ts
+import {readContract, writeContract} from 'wagmi/actions'
+import {config} from './config'
+import {abi} from './abi'
+const balance = await readContract(config, {
+  address: '0xToken',
+  abi,
   functionName: 'balanceOf',
-  args: [userAddress],
+  args: ['0xUser'],
+})
+const hash = await writeContract(config, {
+  address: '0xToken',
+  abi,
+  functionName: 'transfer',
+  args: ['0xUser', 100n],
 })
 ```
 
-<table>
-  <thead>
-    <tr>
-      <th>Wagmi Hook</th>
-      <th>说明</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr v-for="hook of Hooks">
-    <th><a :href="'https://wagmi.sh/' + hook.link" target="_blank">{{ hook.text }}</a></th>
-    <th>{{hook.description}}</th>
-    </tr>
-  </tbody>
-</table>
+### 事件监听与轮询
+以命令式方式监听事件或区块变化，可配置轮询间隔与订阅行为，适合脚本与服务端环境。
 
-## Actions 集合
-
-> 账户、钱包、合约、交易、签名、ENS 等的函数。
-
-```tsx 
-import {getAccount} from '@wagmi/core'
+```ts
+import {watchContractEvent} from '@wagmi/core'
+import {config} from './config'
+import {abi} from './abi'
+const unwatchLogs = watchContractEvent(config, {
+  address: '0xContract',
+  abi,
+  eventName: 'Transfer',
+  onLogs(logs) {
+    console.log('logs', logs)
+  },
+})
+// 调用 unwatchLogs() 以停止监听
 ```
 
-<table>
-  <thead>
-    <tr>
-      <th>Wagmi Action</th>
-      <th>说明</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr v-for="action of Actions">
-    <th>
-      <KeywordTip :href="'https://wagmi.sh/' + action.link" :keyword="action.text" :file="action.file" lang="tsx"></KeywordTip>
-      <DeprecatedIcon v-show="action.deprecated"></DeprecatedIcon>
-    </th>
-    <th>{{action.description}}</th>
-    </tr>
-</tbody>
-</table>
+```ts
+import {watchBlockNumber} from '@wagmi/core'
+import {config} from './config'
+const unwatchBlock = watchBlockNumber(config, {
+  pollingInterval: 1000,
+  onBlockNumber(n) {
+    console.log('block', n)
+  },
+})
+// 调用 unwatchBlock() 以停止监听
+```
 
 ## 进阶
 
@@ -1001,6 +1093,12 @@ const result = await multicall(config, {
 })
 ```
 
+## 环境说明
+
+- React 前端：通过 `wagmi` 使用 React Hooks 与状态；底层传输由 `viem` 提供
+- Node.js/SSR：使用 `@wagmi/core` 或 `wagmi/actions` 搭配 `viem`，不依赖 React
+- 稳定性：在 `createConfig.transports` 中使用 `fallback([...])` 增强容错
+- 体积优化：按需导入 hooks/actions，避免不必要的打包体积
 ```solidity [部署multicall合约]
 // 例如Monad Test目前没有部署multicall合约，就需要自己亲自部署，在Etherscan有源码
 // SPDX-License-Identifier: MIT

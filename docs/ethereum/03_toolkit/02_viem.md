@@ -29,7 +29,7 @@ yarn add viem
 **快速引入:**
 
 ```js
-import {createPublicClient, http} from './viem';
+import {createPublicClient, http} from 'viem';
 import {mainnet} from 'viem/chains';
 
 const client = createPublicClient({
@@ -62,6 +62,7 @@ const publicClient = createPublicClient({
 
 ```js
 import {createWalletClient, http} from 'viem';
+import {mainnet} from 'viem/chains';
 import {privateKeyToAccount} from 'viem/accounts';
 
 const account = privateKeyToAccount('0xYourPrivateKey');
@@ -92,6 +93,7 @@ const wsClient = createPublicClient({
 **自定义链配置：**
 
 ```js
+import {defineChain} from 'viem'
 const monadTestnet = defineChain({
   id: 10143, // ✅ Monad Testnet Chain ID
   name: "Monad Testnet",
@@ -358,32 +360,40 @@ stringToHex('hello'); // => "0x68656c6c6f"
 - `getLogs` 获取日志
 
 ```js
+import {parseAbiItem} from 'viem'
 const logs = await publicClient.getLogs({
   address: '0xContractAddress',
-  event: parseEvent({abi, eventName: 'Transfer'}),
-});
+  event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
+})
 ```
 
 - 事件过滤器构建
 
 ```js
+import {parseAbiItem} from 'viem'
 const logs = await publicClient.getLogs({
   address: '0xContractAddress',
   fromBlock: blockNumber - 1000n,
-  event: parseEvent({abi, eventName: 'Approval'}),
-});
+  event: parseAbiItem('event Approval(address indexed owner, address indexed spender, uint256 value)'),
+})
 ```
 
-- 监听链上事件 `watchEventLogs`
+- 监听链上事件 `watchContractEvent`
 
 ```js
-publicClient.watchEventLogs({
-  address: '0xContract',
-  event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-  onLogs: (logs) => {
-    console.log('Transfer logs:', logs);
+import {parseAbiItem} from 'viem'
+const unwatch = publicClient.watchContractEvent(
+  {
+    address: '0xContractAddress',
+    abi,
+    eventName: 'Transfer',
   },
-});
+  {
+    onLogs: (logs) => {
+      console.log('Transfer logs:', logs)
+    },
+  }
+)
 ```
 
 - 监听新区块 `watchBlockNumber`
@@ -399,13 +409,25 @@ publicClient.watchBlockNumber({
 
 ## 进阶用法
 
-### Batch 批量请求
+### Multicall 批量调用
 
 ```js
-const [bal1, bal2] = await publicClient.batch([
-  getBalance({address: '0x1'}),
-  getBalance({address: '0x2'}),
-]);
+const result = await publicClient.multicall({
+  contracts: [
+    {
+      address: '0xYourToken',
+      abi,
+      functionName: 'balanceOf',
+      args: ['0x1'],
+    },
+    {
+      address: '0xYourToken',
+      abi,
+      functionName: 'balanceOf',
+      args: ['0x2'],
+    },
+  ],
+})
 ```
 
 ### 自定义 RPC 方法调用
@@ -417,4 +439,25 @@ const gasPrice = await publicClient.request({
   method: 'eth_gasPrice',
 });
 ```
+
+### 传输容错（fallback）
+
+```js
+import {createPublicClient, http, fallback} from 'viem'
+import {mainnet} from 'viem/chains'
+const client = createPublicClient({
+  chain: mainnet,
+  transport: fallback([
+    http('https://eth-mainnet.g.alchemy.com/v2/...'),
+    http('https://mainnet.infura.io/v3/...'),
+  ]),
+})
+```
+
+## 环境说明
+
+- 浏览器：使用 `WalletClient` 连接注入钱包；读数据使用 `PublicClient`
+- Node.js/SSR：使用 `PublicClient` 做读操作；需要签名时使用 `WalletClient` 并安全管理密钥
+- 前端框架：`Wagmi` 在 React 中封装 `Viem` 的传输与客户端
+- 浏览器缺失的 Node API 可按需 polyfill（如 `Buffer` 与 `process`）
 
