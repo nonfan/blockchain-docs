@@ -1,4 +1,55 @@
 # 快速入门
+## 网络与 RPC
+
+- **Linea Sepolia**
+  - chainId ：`59141`（ 0xe705 ）
+  - RPC ： https://rpc.sepolia.linea.build
+  - 区块浏览器 ： https://sepolia.lineascan.build
+- **Linea 主网**
+  - chainId ：`59144`（ 0xe6d0 ）
+  - RPC ： https://rpc.linea.build
+  - 区块浏览器 ： https://lineascan.build
+
+## 部署合约
+
+部署一份完全兼容 EVM 的通用合约（示例：**MessageBoard（链上留言板）**），可使用 Forge 或 Hardhat 等开发工具完成。
+
+:::code-group
+
+```bash [Forge]
+curl -L https://foundry.paradigm.xyz | bash
+# 安装 Foundry 工具链
+foundryup
+# forge
+# cast
+# anvil
+# chisel
+
+# 初始化项目
+forge init MessageBoard
+
+# 编译
+forge build
+
+# 部署合约
+forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+```
+
+```bash [Hardhat]
+npm install -g hardhat
+# 初始化 Hardhat 项目
+npx hardhat
+```
+:::
+
+:::code-group
+
+<<< @/public/code-examples/MessageBoard.sol
+:::
+
+> 你也可以手动部署合约，或者直接使用 Linea 测试网上的示例合约：
+`0x9abb5861e3a1eDF19C51F8Ac74A81782e94F8FdC`
+
 
 ## 搭建 Dapp
 
@@ -75,6 +126,17 @@ export default function Provider({ children }:
 因此我们需要获取 `clientId`, 前往 [dashboard.web3auth.io](https://dashboard.web3auth.io/)要注册一个免费的 MetaMask 嵌入式钱包账户.
 
 ![Web3Auth Dashboard](/examples/linea/01_clientId.png)
+
+**在仪表盘上启用 Linea 网络：**
+
+> 要启用 Linea 和 Linea Sepolia 网络：
+
+1. 登录 Web3Auth Dashboard。
+2. 导航到 "Settings"（设置）页面。
+3. 在 "Networks"（网络）部分，找到 "Linea" 和 "Linea Sepolia" 网络。
+4. 点击 "Enable"（启用）按钮，分别为 Linea 和 Linea Sepolia 网络启用。
+
+![启用 Linea 网络](/examples/linea/02_chain.png)
 
 ### 应用提供商
 
@@ -154,6 +216,32 @@ export default function App() {
   );
 }
 ```
+### 连接 Linea 网络
+
+> 自动切换到默认链（Linea）
+
+```tsx
+// app/App.tsx
+import ConnectWallet from "./components/ConnectWallet.tsx";
+import { useChainId, useSwitchChain } from "wagmi"; // [!code ++]
+import { useEffect } from "react"; // [!code ++]
+
+export default function App() {
+  const chainId = useChainId();// [!code ++]
+  const switchChain = useSwitchChain();// [!code ++]
+  useEffect(() => {// [!code ++]
+    if (isConnected && chainId !== 59141) {// [!code ++]
+      switchChain.mutate({ chainId:  59141});// [!code ++]
+    }// [!code ++]
+  }, [isConnected, chainId, switchChain]);// [!code ++]
+  return (
+    <div className="container">
+      <h1>Linea Dapp</h1>
+      <ConnectWallet />
+    </div>
+  );
+}
+```
 
 ::: details 异常错误: Buffer is not defined
  安装依赖：缺少Node环境的buffer
@@ -176,3 +264,121 @@ const g = globalThis as typeof globalThis & {
 ```
 :::
 
+
+## 链上交互
+
+使用 wagmi 模块的 `useWriteContract`, `useReadContract` 来跟合约进行交互。
+
+:::code-group
+
+```tsx [MessageBoard.tsx]
+import { useWriteContract, useReadContract } from "wagmi";
+import { abi } from "../lib/abi";
+export default function MessageBoard() {
+  const activeChainId = 59141;
+  // 读取链上留言总数
+  const { data: countData } = useReadContract({
+    abi,
+    address: contractAddress,
+    functionName: "getMessageCount",
+    chainId: activeChainId,
+  });
+  // 写入新留言
+  const writeContract = useWriteContract();
+  const postMessage = (messageText: string) => {
+    writeContract.mutate({
+      abi,
+      address: contractAddress,
+      functionName: "postMessage",
+      args: [messageText.trim()],
+      chainId: activeChainId,
+    });
+  }
+}
+```
+
+```ts [lib/abi.ts]
+export const abi = [
+  {
+    type: "function",
+    name: "getMessage",
+    inputs: [
+      {
+        name: "index",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "",
+        type: "string",
+        internalType: "string",
+      },
+      {
+        name: "",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getMessageCount",
+    inputs: [],
+    outputs: [
+      {
+        name: "",
+        type: "uint256",
+        internalType: "uint256",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "postMessage",
+    inputs: [
+      {
+        name: "content",
+        type: "string",
+        internalType: "string",
+      },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "event",
+    name: "MessagePosted",
+    inputs: [
+      {
+        name: "sender",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "content",
+        type: "string",
+        indexed: false,
+        internalType: "string",
+      },
+      {
+        name: "timestamp",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+] as const;
+```
+:::
