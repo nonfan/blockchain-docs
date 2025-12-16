@@ -22,17 +22,27 @@ type ChainEntry = {
 
 const docsDir = path.join(__dirname, "../docs");
 
-function extractTitle(filePath: string): string {
+function extractMeta(filePath: string): {
+  title: string;
+  badge?: string;
+  badgeVariant?: "default" | "info" | "beta" | "caution";
+} {
   try {
     const content = fs.readFileSync(filePath, "utf-8");
-    const { content: markdown } = matter(content);
+    const { content: markdown, data } = matter(content);
     const match = markdown.match(/^#\s+(.+)$/m);
-    if (match && match[1]) return match[1];
-    const filename = path.basename(filePath, ".md");
-    return smartParseFilename(filename);
+    const title =
+      (match && match[1]) || smartParseFilename(path.basename(filePath, ".md"));
+    const badge =
+      typeof data.badge === "string" ? (data.badge as string) : undefined;
+    const badgeVariant =
+      typeof data.badgeVariant === "string"
+        ? (data.badgeVariant as "default" | "info" | "beta" | "caution")
+        : undefined;
+    return { title, badge, badgeVariant };
   } catch {
-    const filename = path.basename(filePath, ".md");
-    return smartParseFilename(filename);
+    const title = smartParseFilename(path.basename(filePath, ".md"));
+    return { title };
   }
 }
 
@@ -83,16 +93,38 @@ function scanFolder(folderPath: string): SidebarItem[] {
     if (entry.isDirectory()) {
       const subItems = scanFolder(fullPath);
       if (subItems.length > 0) {
+        const indexPath = path.join(fullPath, "index.md");
+        let groupText = smartParseFolderName(entry.name);
+        let groupBadge: string | undefined;
+        let groupBadgeVariant:
+          | "default"
+          | "info"
+          | "beta"
+          | "caution"
+          | undefined;
+        if (fs.existsSync(indexPath)) {
+          const meta = extractMeta(indexPath);
+          groupText = meta.title || groupText;
+          groupBadge = meta.badge;
+          groupBadgeVariant = meta.badgeVariant;
+        }
         items.push({
-          text: smartParseFolderName(entry.name),
+          text: groupText,
           collapsed: true,
+          badge: groupBadge,
+          badgeVariant: groupBadgeVariant,
           items: subItems,
         });
       }
     } else if (entry.name.endsWith(".md") && entry.name !== "index.md") {
       const linkPath = "/" + relativePath.replace(/\.md$/, "");
-      const title = extractTitle(fullPath);
-      items.push({ text: title, link: linkPath });
+      const meta = extractMeta(fullPath);
+      items.push({
+        text: meta.title,
+        link: linkPath,
+        badge: meta.badge,
+        badgeVariant: meta.badgeVariant,
+      });
     }
   }
   return items;
@@ -143,6 +175,14 @@ export function getSidebar(): Record<string, SidebarItem[]> {
           items: scanChain("solidity"),
         },
         {
+          text: "Aave",
+          collapsed: true,
+          icon: "aave.svg",
+          items: scanChain("aave"),
+          badge: "DeFi",
+          badgeVariant: "caution",
+        },
+        {
           text: "Move",
           collapsed: true,
           icon: "move.svg",
@@ -165,21 +205,21 @@ export function getSidebar(): Record<string, SidebarItem[]> {
       icon: "arbitrum.svg",
       dir: "layer2/arbitrum",
       badge: "Layer2",
-      badgeVariant: "beta",
+      badgeVariant: "info",
     },
     {
       text: "Base",
       icon: "base.svg",
       dir: "layer2/base",
       badge: "Layer2",
-      badgeVariant: "beta",
+      badgeVariant: "info",
     },
     {
       text: "Linea",
       icon: "linea.svg",
       dir: "layer2/linea",
       badge: "Layer2",
-      badgeVariant: "beta",
+      badgeVariant: "info",
     },
     { text: "VeChain", icon: "vet.svg", dir: "vechain" },
     { text: "Monad", icon: "monad.svg", dir: "monad" },
