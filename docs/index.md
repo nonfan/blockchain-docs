@@ -10,11 +10,11 @@ hero:
     alt: 区块链
   actions:
     - theme: brand
-      text: 开始
+      text: 🚀 快速开始
       link: /guide/01_overview
     - theme: alt
-      text: GitHub
-      link: https://github.com/nonfan
+      text: ⭐ GitHub
+      link: https://github.com/nonfan/blockchain-docs
 
 features:
   - icon:
