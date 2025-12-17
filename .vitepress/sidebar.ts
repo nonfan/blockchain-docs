@@ -60,7 +60,7 @@ function smartParseFolderName(folderName: string): string {
   const specialFolders: Record<string, string> = {
     sdks: "SDKs",
     sdk: "SDK",
-    ecosystem: "生态标准与工具链",
+    ecosystem: "生态系统",
     openzeppelin: "OpenZeppelin",
     "react-usage": "React Usages",
   };
