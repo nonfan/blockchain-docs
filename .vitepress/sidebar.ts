@@ -196,6 +196,7 @@ export function getSidebar(): Record<string, SidebarItem[]> {
     { text: "Solana", icon: "solana.svg", dir: "solana" },
     { text: "Sui", icon: "sui.svg", dir: "sui" },
     { text: "Aptos", icon: "aptos.svg", dir: "aptos" },
+    { text: "TON", icon: "ton.svg", dir: "ton" },
   ];
 
   const evmChains: ChainEntry[] = [

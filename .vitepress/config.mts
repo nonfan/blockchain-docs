@@ -68,6 +68,10 @@ export default withMermaid(
               new URL("./theme/components/VPSidebarItem.vue", import.meta.url)
             ),
           },
+          {
+            find: /^@\//,
+            replacement: fileURLToPath(new URL("./", import.meta.url)) + "/",
+          },
         ],
       },
       optimizeDeps: {
@@ -83,6 +87,30 @@ export default withMermaid(
             useAccount: { file: "useAccount.txt", lang: "tsx" },
           },
         });
+        
+        // 处理语言别名
+        const fence = md.renderer.rules.fence;
+        md.renderer.rules.fence = function(...args) {
+          const [tokens, idx] = args;
+          const token = tokens[idx];
+          const lang = token.info.trim();
+          
+          // 语言别名映射
+          const langMap = {
+            'func': 'c',
+            'fc': 'c',
+            'tact': 'typescript',
+            'sol': 'solidity',
+            'solidity': 'solidity',
+          };
+          
+          // 应用映射
+          if (langMap[lang]) {
+            token.info = langMap[lang];
+          }
+          
+          return fence.apply(this, args);
+        };
       },
       code: {
         highlight: "shiki",
