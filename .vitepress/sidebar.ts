@@ -165,6 +165,7 @@ export function getSidebar(): Record<string, SidebarItem[]> {
     { text: "密码学", link: "/guide/02_basics/02_cryptography" },
     { text: "分布式系统", link: "/guide/02_basics/03_distributed-systems" },
     { text: "IPFS", link: "/guide/03_ipfs" },
+    { text: "区块链黑暗森林自救手册", link: "https://github.com/slowmist/Blockchain-dark-forest-selfguard-handbook/blob/main/README_CN.md" },
     {
       text: "智能合约",
       items: [
