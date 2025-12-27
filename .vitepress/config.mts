@@ -9,8 +9,8 @@ import KeywordTipPlugin from "./plugins/keywordTipPlugin";
 import taskLists from "markdown-it-task-lists";
 import { withMermaid } from "vitepress-plugin-mermaid";
 
-// 根据环境决定 base 路径
-const base = "/blockchain-docs";
+// 自定义域名，base 设为根路径
+const base = "/";
 
 export default withMermaid(
   defineConfig({
@@ -27,7 +27,7 @@ export default withMermaid(
     cleanUrls: true,
     description:
       "区块链最初因比特币而流行，目前已广泛应用于加密货币、智能合约、去中心化金融（DeFi）、NFT、供应链溯源等领域。",
-    head: [["link", { rel: "icon", href: `/blockchain-docs/logo.svg` }]],
+    head: [["link", { rel: "icon", href: `/logo.svg` }]],
     themeConfig: {
       logo: "/logo.svg",
       sidebar: getSidebar(),
